@@ -53,14 +53,6 @@ Files: cliff.toml
 Copyright: 2026 Jonathan D.A. Jewell (catachresis-colloquium) <j.d.a.jewell@open.ac.uk>
 License: MPL-2.0
 
-# Narrative documentation is CC-BY-SA-4.0 (estate Rule 1).
-# Placed last so it overrides the MPL-2.0 default for prose (.adoc/.md),
-# including the GitHub community-health .md files. Machine-readable .a2ml is a
-# different extension and stays MPL-2.0 per its stanza above.
-Files: *.adoc *.md
-Copyright: 2026 Jonathan D.A. Jewell (catachresis-colloquium) <j.d.a.jewell@open.ac.uk>
-License: CC-BY-SA-4.0
-
 # Cytoville application code and data follow game LICENCE-POLICY Rule 5.
 # Inherited template tooling retains its original SPDX declaration.
 Files: Cargo.toml crates/* server/* assets/content/* contracts/* profiles/*
@@ -75,3 +67,12 @@ License: AGPL-3.0-or-later
 Files: assets/fonts/DejaVuSans.ttf
 Copyright: Bitstream, Inc. and DejaVu contributors
 License: Bitstream-Vera
+
+# Narrative documentation is CC-BY-SA-4.0 (estate Rule 1).
+# Placed last so it overrides the MPL-2.0 default for prose (.adoc/.md),
+# including the GitHub community-health .md files. Machine-readable .a2ml is a
+# different extension and stays MPL-2.0 per its stanza above.
+Files: *.adoc *.md
+Copyright: 2026 Jonathan D.A. Jewell (catachresis-colloquium) <j.d.a.jewell@open.ac.uk>
+License: CC-BY-SA-4.0
+
