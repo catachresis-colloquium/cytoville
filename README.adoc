@@ -2,6 +2,8 @@
 :toc:
 // SPDX-License-Identifier: CC-BY-SA-4.0
 
+image:https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/catachresis-colloquium/cytoville/governance-badges/badges/k9.json[K9 conformance,link="https://github.com/catachresis-colloquium/cytoville/actions/workflows/dogfood-gate.yml"]
+
 A turn-based protist life simulation and time-management strategy set on a city map.
 Develop one cell through its lifetime: travel, feed, work, study gene expression,
 express organelles, regulate stress and complete an ontogenetic quest checklist.
