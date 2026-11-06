@@ -148,6 +148,9 @@ jobs:
       # template is minted with the new answers, and the parent's own work is
       # carried by a three-way merge (Codex review of #251; owner ruling).
       - name: Chain mint (a minted repo minted again) end to end
+        # This tests the archetype/template product. Cytoville is an instantiated
+        # game with a gitlink, which repo-init explicitly refuses to chain-mint.
+        if: ${{ hashFiles('archetypes/**') != '' }}
         run: bash tests/e2e/chain_mint_test.sh
       # An archetype overlay once shipped its own actions.lock, which replaced
       # the spine's at mint and left every Julia mint with Lock Sync red.

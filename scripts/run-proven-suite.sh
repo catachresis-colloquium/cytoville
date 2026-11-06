@@ -174,23 +174,13 @@ require_file www/tests/run-all.sh && \
   run_lane "Site & .well-known boundary + planted controls" bash www/tests/run-all.sh
 
 # ── Tier 4: Zig FFI unit tests + E2E mint instantiation ──────────────────────
-# Run Zig FFI tests in a temporary copy with project placeholders filled in.
-# Remove the copy on return and propagate the zig build test exit status.
+# Test the actual game boundary with its pinned kernel and generated ABI.
 run_zig_ffi_tests() {
-  local work tok_lc tok_uc
-  work="$(mktemp -d)"
-  # shellcheck disable=SC2064
-  trap "rm -rf '$work'" RETURN
-  cp -R src/interface/ffi "$work/ffi"
-  tok_lc="{{""project}}"
-  tok_uc="{{""PROJECT}}"
-  sed -i -e "s/${tok_lc}/test_project/g" -e "s/${tok_uc}/TEST_PROJECT/g" \
-    "$work/ffi/build.zig" "$work/ffi/src/main.zig" "$work/ffi/test/integration_test.zig" 2>/dev/null || true
-  (cd "$work/ffi" && zig build test)
+  bash tests/ffi_strings_test.sh
 }
 
 if command -v zig >/dev/null 2>&1; then
-  run_lane "Zig FFI ABI layout & memory-leak unit tests" run_zig_ffi_tests
+  run_lane "Zig FFI layout, pointer boundary and C caller tests" run_zig_ffi_tests
 elif [ "$REQUIRE_ZIG" -eq 1 ]; then
   printf '    INERT/SETUP (2): zig compiler required (--require-zig) but missing on PATH\n' >&2
   setup_failures=$((setup_failures + 1))
