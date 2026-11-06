@@ -14,6 +14,7 @@ git -C "$tool_dir/Idris2" remote add origin https://github.com/idris-lang/Idris2
 git -C "$tool_dir/Idris2" fetch --depth=1 origin 15a3e4e70843f7a34100f6470c04b791330788df
 git -C "$tool_dir/Idris2" checkout --detach FETCH_HEAD
 # Upstream Idris2 bootstrap requires its own Makefile; no game Makefile is used.
-make -C "$tool_dir/Idris2" bootstrap SCHEME=scheme
+make -C "$tool_dir/Idris2" bootstrap SCHEME=scheme PREFIX="$tool_dir/idris2"
 make -C "$tool_dir/Idris2" install PREFIX="$tool_dir/idris2"
 echo "$tool_dir/idris2/bin" >> "$GITHUB_PATH"
+echo "IDRIS2_PREFIX=$tool_dir/idris2" >> "${GITHUB_ENV:?}"
