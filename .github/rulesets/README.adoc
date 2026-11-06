@@ -34,3 +34,6 @@ The organisation's separate Actions allowlist blocks the external reusable
 Creusot workflow and three inherited support workflows. Branch protection
 does not resolve that organisation policy, and no organisation access policy
 was changed. See `docs/verification/RECEIPT.adoc` for the validation boundary.
+Base uses no bypass actors. The template's application IDs are not installed
+in this organisation, so GitHub rejected that inherited bypass list. All
+contributors follow the same pull-request policy here.
