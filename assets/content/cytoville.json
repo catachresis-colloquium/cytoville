@@ -1,0 +1,1769 @@
+{
+  "ALL_COURSES": [
+    {
+      "id": "bc1",
+      "route": "biochem",
+      "tier": 1,
+      "name": "Basal Metabolism",
+      "sessions": 2,
+      "atp": 12,
+      "biomass": 20,
+      "blurb": "Glycolysis, TCA cycle, ATP accounting."
+    },
+    {
+      "id": "bc2",
+      "route": "biochem",
+      "tier": 2,
+      "name": "Advanced Enzymatics",
+      "sessions": 3,
+      "atp": 14,
+      "biomass": 35,
+      "blurb": "Hydrolases, proteases, allosteric control."
+    },
+    {
+      "id": "bc3",
+      "route": "biochem",
+      "tier": 3,
+      "name": "Metabolic Integration",
+      "sessions": 4,
+      "atp": 16,
+      "biomass": 55,
+      "blurb": "Cross-pathway flux and yield optimisation."
+    },
+    {
+      "id": "bc4",
+      "route": "biochem",
+      "tier": 4,
+      "name": "Metabolic Engineering",
+      "sessions": 4,
+      "atp": 18,
+      "biomass": 80,
+      "blurb": "Redesign flux without changing the genome."
+    },
+    {
+      "id": "cy1",
+      "route": "cyto",
+      "tier": 1,
+      "name": "Cytoskeletal Engineering",
+      "sessions": 2,
+      "atp": 12,
+      "biomass": 20,
+      "blurb": "Actin, tubulin and their motors."
+    },
+    {
+      "id": "cy2",
+      "route": "cyto",
+      "tier": 2,
+      "name": "Motor Protein Dynamics",
+      "sessions": 3,
+      "atp": 14,
+      "biomass": 35,
+      "blurb": "Kinesin, dynein, myosin mechanics."
+    },
+    {
+      "id": "cy3",
+      "route": "cyto",
+      "tier": 3,
+      "name": "Adhesion & Taxis",
+      "sessions": 4,
+      "atp": 16,
+      "biomass": 55,
+      "blurb": "Focal adhesions, ciliary beating, chemotaxis."
+    },
+    {
+      "id": "cy4",
+      "route": "cyto",
+      "tier": 4,
+      "name": "Morphogenesis Laboratory",
+      "sessions": 4,
+      "atp": 18,
+      "biomass": 80,
+      "blurb": "Shape the cell from within during mitosis."
+    },
+    {
+      "id": "gr1",
+      "route": "gene",
+      "tier": 1,
+      "name": "Transcriptional Control",
+      "sessions": 2,
+      "atp": 12,
+      "biomass": 20,
+      "blurb": "Operons, enhancers, transcription factors."
+    },
+    {
+      "id": "gr2",
+      "route": "gene",
+      "tier": 2,
+      "name": "Cell-Cycle Genetics",
+      "sessions": 3,
+      "atp": 14,
+      "biomass": 35,
+      "blurb": "Cyclins, CDKs, checkpoint control."
+    },
+    {
+      "id": "gr3",
+      "route": "gene",
+      "tier": 3,
+      "name": "Epigenetic Plasticity",
+      "sessions": 4,
+      "atp": 16,
+      "biomass": 55,
+      "blurb": "Chromatin remodelling — expressing latent states."
+    },
+    {
+      "id": "gr4",
+      "route": "gene",
+      "tier": 4,
+      "name": "S-Phase DNA Replication",
+      "sessions": 4,
+      "atp": 18,
+      "biomass": 80,
+      "blurb": "Origin licensing, polymerases, histones."
+    }
+  ],
+  "BASE_ATP": 100,
+  "CAREERS": {
+    "solar": {
+      "id": "solar",
+      "location": "solar",
+      "name": "Photic Solar Plant",
+      "blurb": "Photosynthesis shifts. Pays best on Sunny cycles; cloudy days hurt.",
+      "atp": 20,
+      "pay": [
+        22,
+        32,
+        46,
+        64
+      ],
+      "stress": 2,
+      "nutrition": 0,
+      "requirementText": "Requires Chloroplast"
+    },
+    "detritus": {
+      "id": "detritus",
+      "location": "detritus",
+      "name": "Detritus Processing Corp",
+      "blurb": "Decomposer work. Steady pay but raises Cellular Stress / toxins.",
+      "atp": 18,
+      "pay": [
+        18,
+        27,
+        40,
+        56
+      ],
+      "stress": 8,
+      "nutrition": 0,
+      "requirementText": "Open to all cells"
+    },
+    "bacterivore": {
+      "id": "bacterivore",
+      "location": "security",
+      "name": "Bacterivore Security Agency",
+      "blurb": "Active hunting. High pay; you also eat while working.",
+      "atp": 24,
+      "pay": [
+        28,
+        40,
+        58,
+        80
+      ],
+      "stress": 5,
+      "nutrition": 10,
+      "requirementText": "Needs Phagocytic apparatus + Lysosome + Motility ≥ 15"
+    }
+  },
+  "CAREER_ORDER": [
+    "solar",
+    "detritus",
+    "bacterivore"
+  ],
+  "COURSES": [
+    {
+      "tier": 1,
+      "name": "Basal Metabolism",
+      "sessions": 2,
+      "atp": 12,
+      "biomass": 20,
+      "blurb": "Housekeeping genes: glycolysis, TCA cycle."
+    },
+    {
+      "tier": 2,
+      "name": "Cytoskeletal Engineering",
+      "sessions": 3,
+      "atp": 14,
+      "biomass": 35,
+      "blurb": "Actin, tubulin & motor proteins."
+    },
+    {
+      "tier": 3,
+      "name": "Advanced Enzymatics",
+      "sessions": 4,
+      "atp": 16,
+      "biomass": 55,
+      "blurb": "Specialised hydrolases & cyclin machinery."
+    },
+    {
+      "tier": 4,
+      "name": "S-Phase DNA Replication",
+      "sessions": 4,
+      "atp": 18,
+      "biomass": 80,
+      "blurb": "Origin licensing, polymerase, histone supply."
+    }
+  ],
+  "DIFFICULTY": {
+    "gentle": {
+      "label": "Gentle",
+      "rivalAtp": 0.72,
+      "raid": 0.08,
+      "blurb": "Rival is a sluggish sister."
+    },
+    "standard": {
+      "label": "Standard",
+      "rivalAtp": 0.88,
+      "raid": 0.2,
+      "blurb": "A fair race."
+    },
+    "fierce": {
+      "label": "Fierce",
+      "rivalAtp": 1,
+      "raid": 0.35,
+      "blurb": "Rival is efficient and predatory."
+    }
+  },
+  "EVENTS": [
+    {
+      "id": "virus",
+      "title": "Viral Particle Adsorption",
+      "prompt": "A tailed bacteriophage lands on your membrane and begins to inject its genome.",
+      "science": "Many protists (Tetrahymena, Paramecium) carry RNA interference machinery that silences viral and transposable transcripts; apoptosis-like programmed cell death also exists in unicellular eukaryotes.",
+      "choices": [
+        {
+          "id": "rnai",
+          "label": "Fire up RNA interference (siRNA)",
+          "desc": "Burn ATP to silence the foreign transcripts.",
+          "result": "The phage gene expression is silenced. Integrity +4, stress −4.",
+          "effects": {
+            "atp": -12,
+            "stress": -4,
+            "integrity": 4
+          }
+        },
+        {
+          "id": "shed",
+          "label": "Shed the affected membrane patch",
+          "desc": "Exocytosis of the receptor.",
+          "result": "You vesiculate the receptor and escape. −6 μg C.",
+          "effects": {
+            "biomass": -6,
+            "stress": -3
+          }
+        },
+        {
+          "id": "ignore",
+          "label": "Ignore it and keep working",
+          "desc": "Risky.",
+          "result": "Lysogeny pressure costs you: stress +22 and −10 size.",
+          "effects": {
+            "stress": 22,
+            "size": -4
+          }
+        }
+      ]
+    },
+    {
+      "id": "windfall",
+      "title": "Nutrient Windfall",
+      "prompt": "A lysed neighbour releases a cloud of amino acids and sugars right beside you.",
+      "science": "Saprotrophy — absorbing dissolved organic matter — is common in protists and bacteria.",
+      "choices": [
+        {
+          "id": "graze",
+          "label": "Absorb the plume",
+          "desc": "Free nutrients.",
+          "result": "Nutrition +28.",
+          "effects": {
+            "nutrition": 28
+          }
+        },
+        {
+          "id": "store",
+          "label": "Package it into storage granules",
+          "desc": "Requires Storage Granules.",
+          "requires": {
+            "organelle": "storage"
+          },
+          "result": "Storage +3, nutrition +10.",
+          "effects": {
+            "storage": 3,
+            "nutrition": 10
+          }
+        },
+        {
+          "id": "share",
+          "label": "Signal the rival to share",
+          "desc": "Public goods in a biofilm.",
+          "result": "Both cells feed; relationship improves.",
+          "effects": {
+            "nutrition": 16,
+            "relationship": 10
+          }
+        }
+      ]
+    },
+    {
+      "id": "osmotic",
+      "title": "Osmotic Downpour",
+      "prompt": "Dilute rainwater floods your patch of biofilm.",
+      "science": "Freshwater protists use contractile vacuoles to expel water and avoid lysis.",
+      "choices": [
+        {
+          "id": "vacuole",
+          "label": "Cycle your Contractile Vacuole",
+          "desc": "Requires Contractile Vacuole.",
+          "requires": {
+            "organelle": "vacuole"
+          },
+          "result": "Water expelled: stress −12.",
+          "effects": {
+            "stress": -12
+          }
+        },
+        {
+          "id": "exclude",
+          "label": "Synthesise osmolyte solutes",
+          "desc": "Costs biomass.",
+          "requires": {
+            "minBiomass": 25
+          },
+          "result": "Osmotic balance restored. −25 μg C.",
+          "effects": {
+            "biomass": -25,
+            "stress": -8
+          }
+        },
+        {
+          "id": "endure",
+          "label": "Endure the swelling",
+          "desc": "No cost but damage.",
+          "result": "Membrane strain: stress +20.",
+          "effects": {
+            "stress": 20
+          }
+        }
+      ]
+    },
+    {
+      "id": "grazer",
+      "title": "A Tardigrade Approaches",
+      "prompt": "A water bear grazes through the biofilm, sweeping up everything in its path.",
+      "science": "Tardigrades are micro-predators of protists; mucocysts and trichocysts are defensive exocytoses.",
+      "choices": [
+        {
+          "id": "flee",
+          "label": "Flee with coordinated cilia",
+          "desc": "Requires Motility ≥ 20.",
+          "requires": {
+            "minMotility": 20
+          },
+          "result": "You escape. −10 ATP, stress +4.",
+          "effects": {
+            "atp": -10,
+            "stress": 4
+          }
+        },
+        {
+          "id": "defend",
+          "label": "Discharge defensive organelles",
+          "desc": "Requires armour or trichocysts.",
+          "requires": {
+            "organelle": "trichocyst"
+          },
+          "result": "The tardigrade recoils.",
+          "effects": {
+            "stress": -6,
+            "signaling": 3
+          }
+        },
+        {
+          "id": "hide",
+          "label": "Secrete a mucilage cyst",
+          "desc": "A dampened metabolism.",
+          "result": "You survive, but lose time: −18 ATP, stress −6.",
+          "effects": {
+            "atp": -18,
+            "stress": -6
+          }
+        }
+      ]
+    },
+    {
+      "id": "qa",
+      "title": "Quorum Sensing Wave",
+      "prompt": "Autoinducer molecules ripple across the biofilm: the population is talking.",
+      "science": "Quorum sensing lets microbes coordinate gene expression by population density.",
+      "choices": [
+        {
+          "id": "respond",
+          "label": "Respond to the autoinducer",
+          "desc": "Express community genes.",
+          "result": "Signaling +5, transcription insight +6 biomass.",
+          "effects": {
+            "signaling": 5,
+            "biomass": 6
+          }
+        },
+        {
+          "id": "cheat",
+          "label": "Exploit the public goods without signalling",
+          "desc": "Free-ride.",
+          "result": "Biomass +14, but relationship −8.",
+          "effects": {
+            "biomass": 14,
+            "relationship": -8
+          }
+        },
+        {
+          "id": "relay",
+          "label": "Relay the signal to the rival",
+          "desc": "Cooperative signalling.",
+          "result": "Relationship +12, signaling +3.",
+          "effects": {
+            "relationship": 12,
+            "signaling": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "uv",
+      "title": "Ultraviolet Pulse",
+      "prompt": "The biofilm thins overhead and harsh UV-B reaches your cell.",
+      "science": "UV causes pyrimidine dimers; photolyases and nucleotide-excision repair fix them.",
+      "choices": [
+        {
+          "id": "repair",
+          "label": "Run photolyase repair",
+          "desc": "Spend ATP on DNA repair.",
+          "result": "Genome repaired. −14 ATP, stress −5.",
+          "effects": {
+            "atp": -14,
+            "stress": -5
+          }
+        },
+        {
+          "id": "pigment",
+          "label": "Synthesise protective pigment",
+          "desc": "Invest biomass in screening.",
+          "result": "Pigment laid down. −18 μg C, signaling +2, stress −3.",
+          "effects": {
+            "biomass": -18,
+            "signaling": 2,
+            "stress": -3
+          }
+        },
+        {
+          "id": "ignore",
+          "label": "Stay in the light",
+          "desc": "Chloroplasts love it; DNA does not.",
+          "result": "Stress +18.",
+          "effects": {
+            "stress": 18
+          }
+        }
+      ]
+    },
+    {
+      "id": "motor",
+      "title": "Motor Protein Jam",
+      "prompt": "Kinesin traffic jams on your microtubules; vesicles pile up in the cytoplasm.",
+      "science": "Intraflagellar transport and kinesin/dynein traffic can be impaired by oxidative stress.",
+      "choices": [
+        {
+          "id": "train",
+          "label": "Clear the traffic with a training session",
+          "desc": "Requires Motility ≥ 12.",
+          "requires": {
+            "minMotility": 12
+          },
+          "result": "Motility +4, stress −6.",
+          "effects": {
+            "motility": 4,
+            "stress": -6
+          }
+        },
+        {
+          "id": "autophagy",
+          "label": "Trigger autophagy",
+          "desc": "Turnover damaged motors.",
+          "result": "Stress −8, size −2.",
+          "effects": {
+            "stress": -8,
+            "size": -2
+          }
+        },
+        {
+          "id": "wait",
+          "label": "Wait it out",
+          "desc": "The jam resolves slowly.",
+          "result": "−12 ATP.",
+          "effects": {
+            "atp": -12
+          }
+        }
+      ]
+    },
+    {
+      "id": "silence",
+      "title": "Epigenetic Silencing",
+      "prompt": "Chromatin condenses unexpectedly and part of your expressed programme goes quiet.",
+      "science": "Histone deacetylation and DNA methylation silence genes without changing their sequence — plasticity's dark side.",
+      "choices": [
+        {
+          "id": "deacetylate",
+          "label": "Apply a deacetylase inhibitor",
+          "desc": "Re-open the chromatin.",
+          "result": "Expression restored: −20 μg C, signaling +2.",
+          "effects": {
+            "biomass": -20,
+            "signaling": 2
+          }
+        },
+        {
+          "id": "adapt",
+          "label": "Adapt your phenotype to the silenced state",
+          "desc": "Ontogenetic plasticity.",
+          "result": "Stress +8, but size +3 as resources reroute.",
+          "effects": {
+            "stress": 8,
+            "size": 3
+          }
+        },
+        {
+          "id": "ignore",
+          "label": "Ignore the silencing",
+          "desc": "Some function is lost.",
+          "result": "Signaling −4, stress +6.",
+          "effects": {
+            "signaling": -4,
+            "stress": 6
+          }
+        }
+      ]
+    },
+    {
+      "id": "biofilm",
+      "title": "Biofilm Recruitment",
+      "prompt": "A colony invites you to settle into its matrix.",
+      "science": "Extracellular polymeric substances hold biofilms together; residents gain protection and lose mobility.",
+      "choices": [
+        {
+          "id": "join",
+          "label": "Join the matrix",
+          "desc": "Protection, at a price.",
+          "result": "Stress −14, but −8 ATP from adhesion.",
+          "effects": {
+            "stress": -14,
+            "atp": -8,
+            "relationship": 6
+          }
+        },
+        {
+          "id": "trade",
+          "label": "Trade nutrients at the edge",
+          "desc": "Commercial interaction.",
+          "result": "Biomass +18, nutrition −8.",
+          "effects": {
+            "biomass": 18,
+            "nutrition": -8
+          }
+        },
+        {
+          "id": "decline",
+          "label": "Stay planktonic and free",
+          "desc": "Independence.",
+          "result": "Signaling +2.",
+          "effects": {
+            "signaling": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "divisionwave",
+      "title": "Mitotic Neighbour",
+      "prompt": "The cell beside you divides, blasting its daughters into your space.",
+      "science": "Crowding changes local nutrient and oxygen availability — a real density-dependent cue.",
+      "choices": [
+        {
+          "id": "compete",
+          "label": "Compete for the new territory",
+          "desc": "Contest resources.",
+          "result": "Biomass +12, stress +6, relationship −6.",
+          "effects": {
+            "biomass": 12,
+            "stress": 6,
+            "relationship": -6
+          }
+        },
+        {
+          "id": "welcome",
+          "label": "Cross-feed the daughter cells",
+          "desc": "Cooperative survival.",
+          "result": "Nutrition +12, relationship +10.",
+          "effects": {
+            "nutrition": 12,
+            "relationship": 10
+          }
+        },
+        {
+          "id": "move",
+          "label": "Migrate to a quieter patch",
+          "desc": "Requires motility ≥ 15.",
+          "requires": {
+            "minMotility": 15
+          },
+          "result": "Stress −10.",
+          "effects": {
+            "stress": -10
+          }
+        }
+      ]
+    },
+    {
+      "id": "anoxicpocket",
+      "title": "Anoxic Pocket",
+      "prompt": "You drift into a dense, O₂-depleted corner of the biofilm. Aerobic respiration stalls.",
+      "science": "Hydrogenosomes and mitosomes are mitochondrion-related organelles of anaerobic eukaryotes; hydrogenosomes make ATP by substrate-level phosphorylation and release H₂.",
+      "choices": [
+        {
+          "id": "hydrogenosome",
+          "label": "Run your hydrogenosomes",
+          "desc": "Anaerobic ATP via substrate-level phosphorylation.",
+          "requires": {
+            "organelle": "hydrogenosome"
+          },
+          "result": "ATP +12, stress −6. H₂ bubbles off harmlessly.",
+          "effects": {
+            "atp": 12,
+            "stress": -6
+          }
+        },
+        {
+          "id": "respire",
+          "label": "Push aerobic respiration harder",
+          "desc": "Inefficient without oxygen, but keeps the membrane potential.",
+          "result": "ATP −10, stress +4.",
+          "effects": {
+            "atp": -10,
+            "stress": 4
+          }
+        },
+        {
+          "id": "torpor",
+          "label": "Enter metabolic torpor",
+          "desc": "Slow everything down and wait for oxygen.",
+          "result": "ATP −18, stress −10, size −1.",
+          "effects": {
+            "atp": -18,
+            "stress": -10,
+            "size": -1
+          }
+        }
+      ]
+    }
+  ],
+  "G1S_BIOMASS": 150,
+  "G1S_SIZE": 50,
+  "LOCATIONS": {
+    "home": {
+      "id": "home",
+      "name": "My Cell Interior",
+      "short": "Cell Interior",
+      "lq": "Home",
+      "x": 50,
+      "y": 47,
+      "color": "#2dd4bf",
+      "blurb": "Rest safely, review your organelles, express your phenotype."
+    },
+    "university": {
+      "id": "university",
+      "name": "Ribosome & Nucleus University",
+      "short": "Ribosome University",
+      "lq": "University",
+      "x": 13,
+      "y": 22,
+      "color": "#818cf8",
+      "blurb": "Three majors. Transcribe gene programmes from Tier 1 to 4."
+    },
+    "checkpoint": {
+      "id": "checkpoint",
+      "name": "Cell Cycle Checkpoint Registry",
+      "short": "Cycle Registry",
+      "lq": "City Hall",
+      "x": 50,
+      "y": 11,
+      "color": "#fbbf24",
+      "blurb": "G1/S, S-phase and M-phase certifications."
+    },
+    "trophic": {
+      "id": "trophic",
+      "name": "Trophic Labour Exchange",
+      "short": "Labour Exchange",
+      "lq": "Job Board",
+      "x": 96,
+      "y": 47,
+      "color": "#94a3b8",
+      "blurb": "The district's job board — careers happen in their own workplaces."
+    },
+    "solar": {
+      "id": "solar",
+      "name": "Photic Solar Plant",
+      "short": "Solar Plant",
+      "lq": "Career",
+      "x": 38,
+      "y": 13,
+      "color": "#facc15",
+      "blurb": "Photosynthesis shifts. Requires a chloroplast."
+    },
+    "detritus": {
+      "id": "detritus",
+      "name": "Detritus Processing Corp",
+      "short": "Detritus Corp",
+      "lq": "Career",
+      "x": 12,
+      "y": 55,
+      "color": "#a3a3a3",
+      "blurb": "Decomposer work. Steady pay, rising oxidative stress."
+    },
+    "security": {
+      "id": "security",
+      "name": "Bacterivore Security Agency",
+      "short": "Bacterivore Agency",
+      "lq": "Career",
+      "x": 87,
+      "y": 15,
+      "color": "#f87171",
+      "blurb": "Active hunting/phagocytosis. High pay, needs lysosomes."
+    },
+    "boutique": {
+      "id": "boutique",
+      "name": "Golgi & ER Boutique",
+      "short": "Golgi Boutique",
+      "lq": "Mall",
+      "x": 86,
+      "y": 52,
+      "color": "#e879f9",
+      "blurb": "Synthesise permanent organelles: appliances, vehicles, armour."
+    },
+    "rift": {
+      "id": "rift",
+      "name": "Quorum-Sensing Rift",
+      "short": "Quorum Rift",
+      "lq": "Encounters",
+      "x": 50,
+      "y": 75,
+      "color": "#fb7185",
+      "blurb": "Signal, cross-feed, deter or prey on the rival."
+    },
+    "gym": {
+      "id": "gym",
+      "name": "Cytoskeleton Gym & Lysosome Spa",
+      "short": "Gym & Spa",
+      "lq": "Health & Fitness",
+      "x": 17,
+      "y": 85,
+      "color": "#fb7185",
+      "blurb": "Train motility & integrity. Flush oxidative stress and waste."
+    },
+    "diner": {
+      "id": "diner",
+      "name": "Phagosome Diner",
+      "short": "Phagosome Diner",
+      "lq": "Restaurant",
+      "x": 84,
+      "y": 85,
+      "color": "#fb923c",
+      "blurb": "Immediate nutrition and bulk stock for your storage granules."
+    }
+  },
+  "LOCATION_ORDER": [
+    "home",
+    "university",
+    "solar",
+    "checkpoint",
+    "security",
+    "detritus",
+    "boutique",
+    "rift",
+    "gym",
+    "diner"
+  ],
+  "METABOLIC_DECAY": 30,
+  "MITOSIS_SIZE": 90,
+  "ORGANELLES": {
+    "storage": {
+      "id": "storage",
+      "name": "Storage Granules",
+      "category": "appliance",
+      "cost": 130,
+      "atp": 8,
+      "minTranscription": 0,
+      "effect": "Stores up to 6 nutrient units; auto-feeds you at cycle start when nutrition < 65.",
+      "science": "Paramylon (Euglena) / glycogen granules act as the cell's pantry — the LQ2 Fridge."
+    },
+    "vacuole": {
+      "id": "vacuole",
+      "name": "Contractile Vacuole",
+      "category": "appliance",
+      "cost": 110,
+      "atp": 8,
+      "minTranscription": 0,
+      "effect": "Cancels Osmotic Shift stress and bleeds off 6% stress every cycle.",
+      "science": "Pumps excess water out of freshwater protists, preventing osmotic lysis."
+    },
+    "basal": {
+      "id": "basal",
+      "name": "Basal Bodies",
+      "category": "vehicle",
+      "cost": 70,
+      "atp": 8,
+      "minTranscription": 0,
+      "only": [
+        "euglena",
+        "vorticella",
+        "paramecium",
+        "stentor",
+        "didinium"
+      ],
+      "effect": "Locomotion tier 1: −25% travel ATP (the Shoes).",
+      "science": "Kinetosomes nucleate axonemes — the anchor for every cilium and flagellum."
+    },
+    "cilia": {
+      "id": "cilia",
+      "name": "Coordinated Cilia",
+      "category": "vehicle",
+      "cost": 190,
+      "atp": 8,
+      "minTranscription": 2,
+      "requires": [
+        "basal"
+      ],
+      "only": [
+        "euglena",
+        "vorticella",
+        "paramecium",
+        "stentor",
+        "didinium"
+      ],
+      "effect": "Locomotion tier 2: −50% travel ATP (the Bike).",
+      "science": "Metachronal waves of 9+2 axonemes; needs cytoskeletal engineering."
+    },
+    "flagellum": {
+      "id": "flagellum",
+      "name": "Whip Flagellum",
+      "category": "vehicle",
+      "cost": 380,
+      "atp": 10,
+      "minTranscription": 3,
+      "requires": [
+        "cilia"
+      ],
+      "only": [
+        "euglena",
+        "vorticella",
+        "paramecium",
+        "stentor",
+        "didinium"
+      ],
+      "effect": "Locomotion tier 3: −75% travel ATP (the Car).",
+      "science": "A long undulating axoneme with intraflagellar transport — pure speed."
+    },
+    "pellicle": {
+      "id": "pellicle",
+      "name": "Pellicle Armor / Mucocysts",
+      "category": "armor",
+      "cost": 160,
+      "atp": 8,
+      "minTranscription": 1,
+      "effect": "Blocks hazards, UV stress & rival raids. +3 signaling.",
+      "science": "A protein-strip pellicle with mucocysts is a flexible exoskeleton."
+    },
+    "lysosome": {
+      "id": "lysosome",
+      "name": "Lysosome Battery",
+      "category": "appliance",
+      "cost": 150,
+      "atp": 8,
+      "minTranscription": 2,
+      "effect": "Required for Bacterivore hunting. −3 stress per detritus shift.",
+      "science": "Acid hydrolases digest what the phagosome delivers."
+    },
+    "pseudopod": {
+      "id": "pseudopod",
+      "name": "Phagocytic Apparatus",
+      "category": "appliance",
+      "cost": 150,
+      "atp": 8,
+      "minTranscription": 2,
+      "only": [
+        "euglena",
+        "vorticella",
+        "amoeba",
+        "didinium"
+      ],
+      "effect": "Required for Bacterivore hunting (Paramecium uses its Oral Groove).",
+      "science": "Pseudopodia / peristome funnel & cytopharynx engulf bacterial prey."
+    },
+    "chloroplast": {
+      "id": "chloroplast",
+      "name": "Chloroplast",
+      "category": "signature",
+      "cost": 200,
+      "atp": 8,
+      "minTranscription": 1,
+      "only": [
+        "euglena",
+        "diatom"
+      ],
+      "effect": "Unlocks the Photic Solar Plant.",
+      "science": "Euglena's secondary-endosymbiont plastid fixes carbon from light."
+    },
+    "eyespot": {
+      "id": "eyespot",
+      "name": "Eyespot (Stigma)",
+      "category": "signature",
+      "cost": 130,
+      "atp": 8,
+      "minTranscription": 1,
+      "only": [
+        "euglena"
+      ],
+      "effect": "+10% solar pay: you aim your chloroplasts at the light.",
+      "science": "Carotenoid granules shade the paraflagellar photoreceptor — phototaxis."
+    },
+    "stalk": {
+      "id": "stalk",
+      "name": "Stalk Secretion (Settlement)",
+      "category": "signature",
+      "cost": 240,
+      "atp": 10,
+      "minTranscription": 2,
+      "minSize": 30,
+      "only": [
+        "vorticella"
+      ],
+      "effect": "METAMORPHOSIS: lose the telotroch bonus (+25% travel) but gain +35% pay. Irreversible!",
+      "science": "The telotroch settles, resorbs its girdle and secretes a stalk."
+    },
+    "myoneme": {
+      "id": "myoneme",
+      "name": "Myoneme Spring",
+      "category": "signature",
+      "cost": 200,
+      "atp": 8,
+      "minTranscription": 2,
+      "requires": [
+        "stalk"
+      ],
+      "only": [
+        "vorticella"
+      ],
+      "effect": "Escape contraction: blocks hazards & rival raids. +5 max ATP.",
+      "science": "Spasmoneme: a Ca²⁺-driven protein spring contracts in milliseconds."
+    },
+    "macronucleus": {
+      "id": "macronucleus",
+      "name": "Macronucleus",
+      "category": "signature",
+      "cost": 230,
+      "atp": 10,
+      "minTranscription": 2,
+      "only": [
+        "paramecium",
+        "stentor"
+      ],
+      "effect": "Somatic genome powerhouse: +5% pay. Upkeep 4 μg C/cycle.",
+      "science": "Polyploid nucleus runs everyday gene expression."
+    },
+    "micronucleus": {
+      "id": "micronucleus",
+      "name": "Micronucleus",
+      "category": "signature",
+      "cost": 150,
+      "atp": 8,
+      "minTranscription": 1,
+      "only": [
+        "paramecium"
+      ],
+      "effect": "Germline reserve: +3 signaling. Upkeep 4 μg C/cycle.",
+      "science": "Diploid germline nucleus divides by mitosis; stays silent otherwise."
+    },
+    "trichocyst": {
+      "id": "trichocyst",
+      "name": "Trichocysts",
+      "category": "armor",
+      "cost": 170,
+      "atp": 8,
+      "minTranscription": 2,
+      "only": [
+        "paramecium"
+      ],
+      "effect": "Explosive harpoons: block hazards and rival raids.",
+      "science": "Exocytotic defensive organelles discharge against predators."
+    },
+    "oral": {
+      "id": "oral",
+      "name": "Oral Groove",
+      "category": "signature",
+      "cost": 120,
+      "atp": 8,
+      "minTranscription": 0,
+      "only": [
+        "paramecium"
+      ],
+      "effect": "+20% nutrition from food; counts as phagocytic apparatus.",
+      "science": "Ciliated groove sweeps bacteria into the cytostome."
+    },
+    "frustule": {
+      "id": "frustule",
+      "name": "Silica Frustule",
+      "category": "armor",
+      "cost": 220,
+      "atp": 10,
+      "minTranscription": 1,
+      "only": [
+        "diatom"
+      ],
+      "effect": "Glass armour: blocks hazards and raids, −2 stress each cycle, +6 integrity.",
+      "science": "Precipitated SiO₂ valves (epitheca + hypotheca) with nanoporous areolae."
+    },
+    "holdfast": {
+      "id": "holdfast",
+      "name": "Holdfast (Settlement)",
+      "category": "signature",
+      "cost": 240,
+      "atp": 10,
+      "minTranscription": 2,
+      "minSize": 30,
+      "only": [
+        "stentor"
+      ],
+      "effect": "METAMORPHOSIS: settle and anchor. +35% pay, +25% travel cost. Irreversible!",
+      "science": "The posterior holdfast adheres the trumpet ciliate to a substrate."
+    },
+    "hydrogenosome": {
+      "id": "hydrogenosome",
+      "name": "Hydrogenosomes",
+      "category": "appliance",
+      "cost": 180,
+      "atp": 10,
+      "minTranscription": 2,
+      "effect": "Anaerobic ATP: in Anoxic cycles you gain +10 ATP instead of −10. Also −4 stress in Anoxic.",
+      "science": "Mitochondrion-related organelles (Trichomonas, rumen ciliates, anaerobic fungi) that make ATP by substrate-level phosphorylation and release H₂ and acetate — no O₂ needed."
+    },
+    "toxicyst": {
+      "id": "toxicyst",
+      "name": "Toxicysts",
+      "category": "armor",
+      "cost": 150,
+      "atp": 8,
+      "minTranscription": 1,
+      "only": [
+        "didinium"
+      ],
+      "effect": "Paralysing harpoons: predation success 85% (vs 60%), blocks raids.",
+      "science": "Didinium's toxicysts discharge toxins that immobilise Paramecium prey before ingestion."
+    },
+    "proboscis": {
+      "id": "proboscis",
+      "name": "Proboscis",
+      "category": "signature",
+      "cost": 220,
+      "atp": 10,
+      "minTranscription": 2,
+      "requires": [
+        "toxicyst"
+      ],
+      "only": [
+        "didinium"
+      ],
+      "effect": "+25% hunting pay; rival predation steals +50% more and always lands.",
+      "science": "The extensible anterior cone of Didinium that pierces and sucks out prey cytoplasm."
+    }
+  },
+  "PHASE_INDEX": {
+    "G1": 0,
+    "S": 1,
+    "G2": 2,
+    "M": 3
+  },
+  "PROMOTION_EXP": [
+    0,
+    0,
+    30,
+    90,
+    180
+  ],
+  "PROMOTION_T": [
+    0,
+    0,
+    1,
+    2,
+    3
+  ],
+  "RANKS": [
+    "Unemployed",
+    "Intern Trophont",
+    "Junior Metabolizer",
+    "Senior Niche Specialist",
+    "Apex Producer"
+  ],
+  "ROUTES": [
+    {
+      "id": "biochem",
+      "name": "Metabolic Biochemistry",
+      "blurb": "Enzymes, flux and yield. Each course raises all career pay by 4%.",
+      "color": "#34d399",
+      "courses": [
+        {
+          "id": "bc1",
+          "route": "biochem",
+          "tier": 1,
+          "name": "Basal Metabolism",
+          "sessions": 2,
+          "atp": 12,
+          "biomass": 20,
+          "blurb": "Glycolysis, TCA cycle, ATP accounting."
+        },
+        {
+          "id": "bc2",
+          "route": "biochem",
+          "tier": 2,
+          "name": "Advanced Enzymatics",
+          "sessions": 3,
+          "atp": 14,
+          "biomass": 35,
+          "blurb": "Hydrolases, proteases, allosteric control."
+        },
+        {
+          "id": "bc3",
+          "route": "biochem",
+          "tier": 3,
+          "name": "Metabolic Integration",
+          "sessions": 4,
+          "atp": 16,
+          "biomass": 55,
+          "blurb": "Cross-pathway flux and yield optimisation."
+        },
+        {
+          "id": "bc4",
+          "route": "biochem",
+          "tier": 4,
+          "name": "Metabolic Engineering",
+          "sessions": 4,
+          "atp": 18,
+          "biomass": 80,
+          "blurb": "Redesign flux without changing the genome."
+        }
+      ]
+    },
+    {
+      "id": "cyto",
+      "name": "Cytoskeletal Engineering",
+      "blurb": "Structure and motion. Each course grants +4 motility and −2% travel ATP.",
+      "color": "#f472b6",
+      "courses": [
+        {
+          "id": "cy1",
+          "route": "cyto",
+          "tier": 1,
+          "name": "Cytoskeletal Engineering",
+          "sessions": 2,
+          "atp": 12,
+          "biomass": 20,
+          "blurb": "Actin, tubulin and their motors."
+        },
+        {
+          "id": "cy2",
+          "route": "cyto",
+          "tier": 2,
+          "name": "Motor Protein Dynamics",
+          "sessions": 3,
+          "atp": 14,
+          "biomass": 35,
+          "blurb": "Kinesin, dynein, myosin mechanics."
+        },
+        {
+          "id": "cy3",
+          "route": "cyto",
+          "tier": 3,
+          "name": "Adhesion & Taxis",
+          "sessions": 4,
+          "atp": 16,
+          "biomass": 55,
+          "blurb": "Focal adhesions, ciliary beating, chemotaxis."
+        },
+        {
+          "id": "cy4",
+          "route": "cyto",
+          "tier": 4,
+          "name": "Morphogenesis Laboratory",
+          "sessions": 4,
+          "atp": 18,
+          "biomass": 80,
+          "blurb": "Shape the cell from within during mitosis."
+        }
+      ]
+    },
+    {
+      "id": "gene",
+      "name": "Genetic Regulation",
+      "blurb": "Control and progression. Each course grants +2 signaling and promotion eligibility.",
+      "color": "#a78bfa",
+      "courses": [
+        {
+          "id": "gr1",
+          "route": "gene",
+          "tier": 1,
+          "name": "Transcriptional Control",
+          "sessions": 2,
+          "atp": 12,
+          "biomass": 20,
+          "blurb": "Operons, enhancers, transcription factors."
+        },
+        {
+          "id": "gr2",
+          "route": "gene",
+          "tier": 2,
+          "name": "Cell-Cycle Genetics",
+          "sessions": 3,
+          "atp": 14,
+          "biomass": 35,
+          "blurb": "Cyclins, CDKs, checkpoint control."
+        },
+        {
+          "id": "gr3",
+          "route": "gene",
+          "tier": 3,
+          "name": "Epigenetic Plasticity",
+          "sessions": 4,
+          "atp": 16,
+          "biomass": 55,
+          "blurb": "Chromatin remodelling — expressing latent states."
+        },
+        {
+          "id": "gr4",
+          "route": "gene",
+          "tier": 4,
+          "name": "S-Phase DNA Replication",
+          "sessions": 4,
+          "atp": 18,
+          "biomass": 80,
+          "blurb": "Origin licensing, polymerases, histones."
+        }
+      ]
+    }
+  ],
+  "SCENARIOS": {
+    "fresh-daughter": {
+      "id": "fresh-daughter",
+      "name": "Fresh Daughter Cell",
+      "tier": "Tutorial",
+      "tagline": "Just divided! Establish homeostasis before your sister cell does.",
+      "intro": "You are a newborn daughter cell in early G1. Your sister is racing you for the same niche. Get a trophic job, build a Contractile Vacuole, keep your meters in balance and grow to mature G1 size.",
+      "turnLimit": 18,
+      "allowMitosis": false,
+      "startSize": 10,
+      "startBiomass": 120,
+      "rivalOffset": 0,
+      "quests": [
+        {
+          "id": "job",
+          "label": "Get an entry-level trophic role",
+          "hint": "Get hired at a workplace: Solar Plant, Detritus Corp or Bacterivore Agency.",
+          "kind": "career",
+          "target": 1
+        },
+        {
+          "id": "vac",
+          "label": "Synthesize a Contractile Vacuole",
+          "hint": "Golgi & ER Boutique.",
+          "kind": "organelle",
+          "target": 1,
+          "param": "vacuole"
+        },
+        {
+          "id": "size",
+          "label": "Reach mature G1 size (55%)",
+          "hint": "Eat well every cycle to grow.",
+          "kind": "size",
+          "target": 55
+        },
+        {
+          "id": "home",
+          "label": "Establish homeostasis (3 steady cycles)",
+          "hint": "End 3 cycles in a row with Stress ≤ 35% and Nutrition ≥ 50.",
+          "kind": "homeostasis",
+          "target": 3
+        }
+      ],
+      "weather": {
+        "calm": 4,
+        "sunny": 3,
+        "uv": 0,
+        "bloom": 3,
+        "osmotic": 1,
+        "cloudy": 1,
+        "anoxic": 0
+      }
+    },
+    "plasticity": {
+      "id": "plasticity",
+      "name": "Phenotypic Plasticity",
+      "tier": "Intermediate",
+      "tagline": "Survive shifting environmental cycles and climb the trophic ladder.",
+      "intro": "The biofilm weather turns volatile: UV bursts, osmotic shocks, blooms and murk. Express the right gene pathways for the day, learn to work in more than one trophic niche and reach the Apex Producer role.",
+      "turnLimit": 36,
+      "allowMitosis": false,
+      "startSize": 25,
+      "startBiomass": 150,
+      "rivalOffset": 1,
+      "quests": [
+        {
+          "id": "t3",
+          "label": "Express Level 3 genes (Advanced Enzymatics)",
+          "hint": "Ribosome University — any major raises your transcription tier.",
+          "kind": "transcription",
+          "target": 3
+        },
+        {
+          "id": "path",
+          "label": "Work in 2 different trophic pathways",
+          "hint": "Work in two different workplaces to exploit the weather.",
+          "kind": "pathways",
+          "target": 2
+        },
+        {
+          "id": "org",
+          "label": "Synthesize 4 organelles",
+          "hint": "Golgi & ER Boutique.",
+          "kind": "organelles",
+          "target": 4
+        },
+        {
+          "id": "earn",
+          "label": "Earn 2,000 biomass",
+          "hint": "Work shifts in the career districts.",
+          "kind": "earned",
+          "target": 2000
+        },
+        {
+          "id": "apex",
+          "label": "Obtain Apex Producer role",
+          "hint": "Climb: Intern → Junior → Senior → Apex. Study Genetic Regulation for the top rank.",
+          "kind": "career",
+          "target": 4
+        }
+      ],
+      "weather": {
+        "calm": 2,
+        "sunny": 2,
+        "uv": 2,
+        "bloom": 2,
+        "osmotic": 2,
+        "cloudy": 1,
+        "anoxic": 2
+      }
+    },
+    "full-cycle": {
+      "id": "full-cycle",
+      "name": "The Full Cell Cycle",
+      "tier": "Master",
+      "tagline": "G1 → S → G2 → Mitosis. Divide before your rival.",
+      "intro": "Guide a juvenile cell through the entire cell cycle: pass the G1/S restriction point, replicate your DNA, mature in G2 with a full organelle set, and trigger mitosis at the Checkpoint Registry.",
+      "turnLimit": 55,
+      "allowMitosis": true,
+      "startSize": 8,
+      "startBiomass": 100,
+      "rivalOffset": 2,
+      "quests": [
+        {
+          "id": "g1s",
+          "label": "Pass the G1/S restriction point",
+          "hint": "Size 50%, 150 μg C, Tier 2 genes.",
+          "kind": "phase",
+          "target": 1
+        },
+        {
+          "id": "t4",
+          "label": "Express Level 4 genes (S-Phase Replication)",
+          "hint": "University — a long course.",
+          "kind": "transcription",
+          "target": 4
+        },
+        {
+          "id": "org",
+          "label": "Synthesize 6 organelles",
+          "hint": "Appliances, vehicles, armour.",
+          "kind": "organelles",
+          "target": 6
+        },
+        {
+          "id": "sig",
+          "label": "Complete your signature organelle set",
+          "hint": "Each protist has a unique kit.",
+          "kind": "signature",
+          "target": 1
+        },
+        {
+          "id": "earn",
+          "label": "Accumulate 2,200 biomass",
+          "hint": "Lifetime biomass earned.",
+          "kind": "earned",
+          "target": 2200
+        },
+        {
+          "id": "g2",
+          "label": "Complete S-phase → mature G2",
+          "hint": "3 sessions of DNA synthesis.",
+          "kind": "phase",
+          "target": 2
+        },
+        {
+          "id": "mit",
+          "label": "Trigger M-phase (Mitosis)",
+          "hint": "Size 90%, all goals done, low stress.",
+          "kind": "mitosis",
+          "target": 1
+        }
+      ],
+      "weather": {
+        "calm": 3,
+        "sunny": 2,
+        "uv": 2,
+        "bloom": 2,
+        "osmotic": 1,
+        "cloudy": 1,
+        "anoxic": 2
+      }
+    }
+  },
+  "SCENARIO_ORDER": [
+    "fresh-daughter",
+    "plasticity",
+    "full-cycle"
+  ],
+  "SPECIMENS": {
+    "euglena": {
+      "id": "euglena",
+      "name": "Euglena",
+      "latin": "Euglena gracilis",
+      "title": "The Mixotrophic Switcher",
+      "blurb": "A flagellated cell that can photosynthesise or eat. Its phenotype is plastic: the same genome expresses a chloroplast-driven or a phagotrophic programme depending on the weather and the career you choose.",
+      "arc": [
+        "Juvenile: proplastids, a single whip, a tiny eyespot",
+        "Growing: chloroplasts mature, paraflagellar body orients to light",
+        "Mature G2: paramylon stores fill; mixotrophic synergy"
+      ],
+      "traits": [
+        "Only specimen with a Chloroplast (unlocks Photic Solar Plant)",
+        "Phenotype switch (Photo ⇄ Hetero) costs just 4 ATP at home",
+        "Solar shifts also feed the cell (+6 nutrition)",
+        "Mixotroph synergy: +10% pay with chloroplast + phagocytic apparatus"
+      ],
+      "startOrganelles": [
+        "basal",
+        "chloroplast"
+      ],
+      "signature": [
+        "chloroplast",
+        "eyespot",
+        "pseudopod"
+      ],
+      "startMotility": 12,
+      "startIntegrity": 5,
+      "startSignaling": 5,
+      "body": "#4ade80",
+      "accent": "#fb7185"
+    },
+    "vorticella": {
+      "id": "vorticella",
+      "name": "Vorticella",
+      "latin": "Vorticella convallaria",
+      "title": "The Morphogenetic Settler",
+      "blurb": "Born as a free-swimming telotroch, it must eventually settle, secrete a stalk and grow a spring-loaded myoneme. Settling is irreversible metamorphosis: you trade mobility for high earning power.",
+      "arc": [
+        "Telotroch: barrel-shaped swimmer with an aboral ciliary girdle (fast!)",
+        "Settlement: attaches, loses girdle, secretes a stalk",
+        "Mature: myoneme spring snaps the zooid away from danger"
+      ],
+      "traits": [
+        "Telotroch (unsettled): −25% extra travel cost",
+        "Settled (Stalk): +35% pay but +25% travel cost (anchored)",
+        "Myoneme escape-contraction blocks hazards and interference",
+        "No chloroplast: heterotroph only"
+      ],
+      "startOrganelles": [
+        "basal"
+      ],
+      "signature": [
+        "stalk",
+        "myoneme"
+      ],
+      "startMotility": 18,
+      "startIntegrity": 8,
+      "startSignaling": 3,
+      "body": "#c4b5fd",
+      "accent": "#f0abfc"
+    },
+    "paramecium": {
+      "id": "paramecium",
+      "name": "Paramecium",
+      "latin": "Paramecium caudatum",
+      "title": "The Ciliated Executive",
+      "blurb": "A highly motile, structurally complex ciliate. Two kinds of nuclei, defensive trichocysts and an oral groove demand upkeep — but reward the cell with speed and efficiency.",
+      "arc": [
+        "Juvenile: ciliary rows established, oral groove functional",
+        "Growing: macronucleus polyploidy rises; micronucleus held in reserve",
+        "Mature G2: trichocysts docked, conjugation-ready (but we only divide!)"
+      ],
+      "traits": [
+        "Starts with Oral Groove: +20% nutrition from all food",
+        "−10% travel cost; high base motility",
+        "Nuclear upkeep: 4 μg C per nucleus each cycle (or −8 ATP)",
+        "Trichocysts block hazards and rival raids"
+      ],
+      "startOrganelles": [
+        "basal",
+        "oral"
+      ],
+      "signature": [
+        "macronucleus",
+        "micronucleus",
+        "trichocyst",
+        "oral"
+      ],
+      "startMotility": 25,
+      "startIntegrity": 10,
+      "startSignaling": 8,
+      "body": "#7dd3fc",
+      "accent": "#fde68a"
+    },
+    "amoeba": {
+      "id": "amoeba",
+      "name": "Amoeba",
+      "latin": "Amoeba proteus",
+      "title": "The Engulfer",
+      "blurb": "A shapeless professional predator. Amoeba extends pseudopods to crawl and to engulf, and its cell membrane is endlessly re-modelled. Slow on the map, lethal in the security agency.",
+      "arc": [
+        "Juvenile: a single lobose pseudopod, exploratory cytoplasm",
+        "Growing: branched pseudopodia, contractile vacuole tunes osmosis",
+        "Mature G2: enormous, food vacuoles packed with prey"
+      ],
+      "traits": [
+        "Starts with a Phagocytic Apparatus (can hunt from turn 1)",
+        "Hunting pay ×1.2 and Detritus pay ×1.1",
+        "Crawling is slow: normal travel, no basal-body discount",
+        "Pseudopod remodelling: +3 integrity each training session"
+      ],
+      "startOrganelles": [
+        "pseudopod"
+      ],
+      "signature": [
+        "pseudopod",
+        "lysosome",
+        "vacuole"
+      ],
+      "startMotility": 8,
+      "startIntegrity": 8,
+      "startSignaling": 2,
+      "body": "#f0abfc",
+      "accent": "#fb7185"
+    },
+    "stentor": {
+      "id": "stentor",
+      "name": "Stentor",
+      "latin": "Stentor coeruleus",
+      "title": "The Trumpet Regenerator",
+      "blurb": "A giant trumpet ciliate that anchors with a holdfast and fans a crown of cilia to filter food. Stentor is famous for regenerating from fragments — here, from physiological stress.",
+      "arc": [
+        "Juvenile: motile, searching for a substrate",
+        "Growing: secretes a holdfast and unfurls its trumpet crown",
+        "Mature: blue-green pigment protects it from light damage"
+      ],
+      "traits": [
+        "Holdfast settlement: +35% pay but +25% travel cost",
+        "Regeneration: −4 extra stress every cycle",
+        "Trumpet crown filters food: +15% nutrition",
+        "Blue-green stentorin pigment: High UV costs less stress"
+      ],
+      "startOrganelles": [
+        "basal"
+      ],
+      "signature": [
+        "holdfast",
+        "myoneme",
+        "macronucleus"
+      ],
+      "startMotility": 12,
+      "startIntegrity": 14,
+      "startSignaling": 8,
+      "body": "#60a5fa",
+      "accent": "#c084fc"
+    },
+    "diatom": {
+      "id": "diatom",
+      "name": "Diatom",
+      "latin": "Thalassiosira pseudonana",
+      "title": "The Silica Architect",
+      "blurb": "A photosynthetic protist that builds itself a glass house. The silica frustule is armour, but it is heavy: diatoms sink and move slowly. The Solar Plant loves them.",
+      "arc": [
+        "Juvenile: thin silica valves begin to precipitate",
+        "Growing: areolae pattern the frustule; chloroplasts multiply",
+        "Mature G2: a heavy, beautifully armoured photosynthetic cell"
+      ],
+      "traits": [
+        "Starts with a Chloroplast (Solar Plant unlocked)",
+        "Silica Frustule blocks hazards and bleeds stress each cycle",
+        "Solar pay ×1.2; heavy cell −10% travel efficiency",
+        "High structural integrity (+8) but low motility"
+      ],
+      "startOrganelles": [
+        "chloroplast"
+      ],
+      "signature": [
+        "frustule",
+        "chloroplast",
+        "vacuole"
+      ],
+      "startMotility": 4,
+      "startIntegrity": 18,
+      "startSignaling": 6,
+      "body": "#fcd34d",
+      "accent": "#fde68a"
+    },
+    "didinium": {
+      "id": "didinium",
+      "name": "Didinium",
+      "latin": "Didinium nasutum",
+      "title": "The Ciliate Wolf",
+      "blurb": "A barrel-shaped ciliate that hunts other ciliates. A sharp proboscis and toxicysts paralalyse prey — Paramecium is its favourite meal. It is the apex predator of the protist world, and it knows it.",
+      "arc": [
+        "Juvenile: two ciliary girdles, a small proboscis",
+        "Growing: toxicysts dock around the cytostome",
+        "Mature G2: a fully armed hunting barrel — the wolf of the biofilm"
+      ],
+      "traits": [
+        "Starts with a Toxicyst battery (predation success 85%)",
+        "Hunting pay ×1.25; predation on the rival steals more",
+        "Fast swimmer: −5% travel cost",
+        "No chloroplast, no phagocytic funnel needed: the proboscis is the weapon"
+      ],
+      "startOrganelles": [
+        "basal",
+        "toxicyst"
+      ],
+      "signature": [
+        "toxicyst",
+        "proboscis"
+      ],
+      "startMotility": 20,
+      "startIntegrity": 6,
+      "startSignaling": 4,
+      "body": "#fca5a5",
+      "accent": "#ef4444"
+    }
+  },
+  "SPECIMEN_ORDER": [
+    "euglena",
+    "vorticella",
+    "paramecium",
+    "amoeba",
+    "stentor",
+    "diatom",
+    "didinium"
+  ],
+  "STORAGE_CAP": 6,
+  "S_SESSIONS": 3,
+  "TRAVEL_FACTOR": 0.18,
+  "WEATHER": {
+    "anoxic": {
+      "id": "anoxic",
+      "name": "Anoxic Pocket",
+      "blurb": "Dense biofilm, O₂ depleted: −10 ATP unless you run hydrogenosomes (+10 ATP).",
+      "pay": {
+        "solar": 0.8,
+        "detritus": 1.1,
+        "bacterivore": 1.1
+      },
+      "dinerMult": 1.1
+    },
+    "calm": {
+      "id": "calm",
+      "name": "Calm Waters",
+      "blurb": "No special effects.",
+      "pay": {
+        "solar": 1,
+        "detritus": 1,
+        "bacterivore": 1
+      },
+      "dinerMult": 1
+    },
+    "sunny": {
+      "id": "sunny",
+      "name": "Sunny Day",
+      "blurb": "Solar pay +40%.",
+      "pay": {
+        "solar": 1.4,
+        "detritus": 1,
+        "bacterivore": 1
+      },
+      "dinerMult": 1
+    },
+    "uv": {
+      "id": "uv",
+      "name": "High UV Day",
+      "blurb": "Solar +20%, but +14 stress without Pellicle.",
+      "pay": {
+        "solar": 1.2,
+        "detritus": 1,
+        "bacterivore": 1
+      },
+      "dinerMult": 1
+    },
+    "bloom": {
+      "id": "bloom",
+      "name": "Nutrient Bloom",
+      "blurb": "Diner −40%; detritus & hunting pay +20%.",
+      "pay": {
+        "solar": 1,
+        "detritus": 1.2,
+        "bacterivore": 1.2
+      },
+      "dinerMult": 0.6
+    },
+    "osmotic": {
+      "id": "osmotic",
+      "name": "Osmotic Shift",
+      "blurb": "+18 stress without a Contractile Vacuole.",
+      "pay": {
+        "solar": 1,
+        "detritus": 1,
+        "bacterivore": 1
+      },
+      "dinerMult": 1
+    },
+    "cloudy": {
+      "id": "cloudy",
+      "name": "Turbid & Cloudy",
+      "blurb": "Solar −40%; hunting +10%.",
+      "pay": {
+        "solar": 0.6,
+        "detritus": 1,
+        "bacterivore": 1.1
+      },
+      "dinerMult": 1
+    }
+  }
+}

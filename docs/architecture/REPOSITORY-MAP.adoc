@@ -65,6 +65,10 @@ predecessors did.
 | yes
 | git commit template; wired by .github/hooks/install.sh (git config commit.template)
 
+| `.gitmodules`
+| yes
+| Pins the native Evil Weevil dependency
+
 | `.hypatia-ignore`
 | yes
 | the Hypatia scanner reads it from the repo root
@@ -97,6 +101,14 @@ predecessors did.
 | optional
 | estate docs gate (standards scripts/check-docs-presence.sh) requires CONTRIBUTING at the ROOT; this is the copy it verifies
 
+| `Cargo.lock`
+| yes
+| Exact Rust dependency graph
+
+| `Cargo.toml`
+| yes
+| Rust workspace entry point
+
 | `Justfile`
 | yes
 | thin; delegates phases to build/just/*.just
@@ -121,9 +133,9 @@ predecessors did.
 | optional
 | community health file; GitHub accepts it at root, docs/ or .github/
 
-| `archetypes/`
-| optional
-| template-only variation seam (ADR-0003); `just repo-init` removes it from minted repos
+| `assets/`
+| yes
+| Authoritative game content
 
 | `benches/`
 | optional
@@ -137,9 +149,25 @@ predecessors did.
 | yes
 | .gitlab-ci.yml + .pre-commit-config.yaml; ci/README.adoc records the out-of-band GitLab project setting these require
 
+| `contracts/`
+| yes
+| Game-owned UMS package contracts
+
+| `coordination.k9`
+| yes
+| Current standards coordination grammar 1.2.0
+
 | `coordination.k9.ncl`
 | yes
 | repo-local session binding (template-mandated)
+
+| `crates/`
+| yes
+| Rust core, client, native boundary and UMS adapter
+
+| `cytoville_chora.deed`
+| yes
+| the repo deed: universal AI entry point; family-7 allocation manifest + ply tree folded in (standards#837 pilot). Filename carries the repo slug (deed dispatch <stem>_chora.deed), so repo-init renames it at mint
 
 | `docs/`
 | yes
@@ -148,6 +176,10 @@ predecessors did.
 | `examples/`
 | optional
 | Cargo-conventional at package root
+
+| `external/`
+| yes
+| Pinned Evil Weevil source submodule
 
 | `features/`
 | optional
@@ -165,13 +197,17 @@ predecessors did.
 | yes
 | the toolchain: every tool at latest (PROVISIONING-STANDARD §4)
 
-| `rsr-template-repo_chora.deed`
+| `profiles/`
 | yes
-| the repo deed: universal AI entry point; family-7 allocation manifest + ply tree folded in (standards#837 pilot). Filename carries the repo slug (deed dispatch <stem>_chora.deed), so repo-init renames it at mint
+| UMS profile descriptor
 
 | `scripts/`
 | yes
 | repo helper scripts
+
+| `server/`
+| yes
+| Elixir authoritative multiplayer supervision
 
 | `session/`
 | yes
@@ -192,6 +228,10 @@ predecessors did.
 | `verification/`
 | optional
 | proofs; only where formal-proofs is declared
+
+| `why3find.json`
+| yes
+| Creusot resolves proof configuration at Cargo workspace root
 
 | `www/`
 | yes
@@ -252,7 +292,6 @@ your own repo - but do not read their emptiness as neglect here.
 | `src/core/`
 | `src/definitions/`
 | `src/errors/`
-| `src/interface/generated/`
 | `src/interface/generated/abi/`
 | `tests/fuzz/`
 | `verification/benchmarks/`
@@ -261,17 +300,3 @@ your own repo - but do not read their emptiness as neglect here.
 | `verification/safety_case/`
 | `verification/simulations/`
 | `verification/tests/`
-| `verification/traceability/`
-|===
-
-== Where things are enforced
-
-* Root shape - `scripts/check-root-shape.sh` against
-  `.machine_readable/root-allow.txt`, run by `.github/workflows/estate-rules.yml`.
-  The check is bidirectional: unlisted entries fail, and required entries
-  that are absent also fail.
-* This map - `just repo-map` must produce no diff.
-* Community health - GitHub reads `.github/` and no other path.
-* Variant divergence - `scripts/check-variant-drift.sh` compares a child
-  to its parent BY PATH, so any move here invalidates every child's
-  declared path lists until they are re-anchored.

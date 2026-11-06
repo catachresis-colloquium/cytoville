@@ -1,112 +1,67 @@
--- SPDX-License-Identifier: MPL-2.0
--- Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-||| ABI Type Definitions Template
-|||
-||| This module defines the Application Binary Interface (ABI) for this library.
-||| All type definitions include formal proofs of correctness.
-
+-- SPDX-License-Identifier: AGPL-3.0-or-later
 module Abi.Types
-
-import Data.Bits
-import Data.So
-import Data.Vect
-import Decidable.Equality
-
 %default total
 
---------------------------------------------------------------------------------
--- Platform Model
---------------------------------------------------------------------------------
-
-||| Target platforms for the FFI bridge
 public export
-data Platform = Linux | MacOS | Windows | WASM | RISCV
-
-||| Pointer size in bits per platform
+abiVersion : Nat
+abiVersion = 1
 public export
-ptrSize : Platform -> Nat
-ptrSize Linux = 64
-ptrSize MacOS = 64
-ptrSize Windows = 64
-ptrSize WASM = 32
-ptrSize RISCV = 64
-
-||| Current target platform (detected at compile-time)
+observationSize : Nat
+observationSize = 2 * 8 + 8 * 4
 public export
-thisPlatform : Platform
-thisPlatform = Linux -- Simplified for template
-
---------------------------------------------------------------------------------
--- Core Types
---------------------------------------------------------------------------------
-
-||| Return codes for FFI calls
+memorySize : Nat
+memorySize = 2 * 8 + 8 * 4
 public export
-data Result = Ok | Error | InvalidParam | Busy
+intentSize : Nat
+intentSize = 4 * 4
 
-||| Results are decidably equal
 public export
-implementation DecEq Result where
-  decEq Ok Ok = Yes Refl
-  decEq Error Error = Yes Refl
-  decEq InvalidParam InvalidParam = Yes Refl
-  decEq Busy Busy = Yes Refl
-  decEq Ok Error = No (\case Refl impossible)
-  decEq Ok InvalidParam = No (\case Refl impossible)
-  decEq Ok Busy = No (\case Refl impossible)
-  decEq Error Ok = No (\case Refl impossible)
-  decEq Error InvalidParam = No (\case Refl impossible)
-  decEq Error Busy = No (\case Refl impossible)
-  decEq InvalidParam Ok = No (\case Refl impossible)
-  decEq InvalidParam Error = No (\case Refl impossible)
-  decEq InvalidParam Busy = No (\case Refl impossible)
-  decEq Busy Ok = No (\case Refl impossible)
-  decEq Busy Error = No (\case Refl impossible)
-  decEq Busy InvalidParam = No (\case Refl impossible)
-
-||| Opaque handle for library resources
-||| Invariant: Handle pointer must be non-null
+healthOffset : Nat
+healthOffset = 2 * 8
 public export
-record Handle where
-  constructor MkHandle
-  ptr : Bits64
-  0 prf : So (ptr /= 0)
-
-||| Returns Nothing if pointer is null
+contactOffset : Nat
+contactOffset = 2 * 8 + 6 * 4
 public export
-createHandle : Bits64 -> Maybe Handle
-createHandle 0 = Nothing
-createHandle ptr = case decSo (ptr /= 0) of
-  Yes p => Just (MkHandle ptr p)
-  No _ => Nothing
-
---------------------------------------------------------------------------------
--- C-Types Mapping
---------------------------------------------------------------------------------
-
-||| Tagged types for C-FFI boundary
+actionOffset : Nat
+actionOffset = 2 * 8 + 3 * 4
 public export
-data CType = CInt | CUInt | CLong | CULong | CPtrType
+targetOffset : Nat
+targetOffset = 4
 
-||| Pointer type for platform
 public export
-CPtr : Platform -> CType -> Type
-CPtr p _ = Bits64 -- Simplified for 64-bit template
+observationLayout : Abi.Types.observationSize = 48
+observationLayout = Refl
+public export
+memoryLayout : Abi.Types.memorySize = 48
+memoryLayout = Refl
+public export
+intentLayout : Abi.Types.intentSize = 16
+intentLayout = Refl
 
-||| Size of C types (platform-specific)
 public export
-cSizeOf : (p : Platform) -> (t : CType) -> Nat
-cSizeOf p CInt = 4
-cSizeOf p CUInt = 4
-cSizeOf p CLong = 8
-cSizeOf p CULong = 8
-cSizeOf p CPtrType = 8
+data Seat = First | Second
+public export
+other : Seat -> Seat
+other First = Second
+other Second = First
+public export
+otherInvolution : (s : Seat) -> other (other s) = s
+otherInvolution First = Refl
+otherInvolution Second = Refl
 
-||| Alignment of C types (platform-specific)
+-- Interfaces describe legal engineering states, not a parallel Rust simulation.
 public export
-cAlignOf : (p : Platform) -> (t : CType) -> Nat
-cAlignOf p CInt = 4
-cAlignOf p CUInt = 4
-cAlignOf p CLong = 8
-cAlignOf p CULong = 8
-cAlignOf p CPtrType = 8
+data Phase = G1 | S | G2 | M
+public export
+data Transition : Phase -> Phase -> Type where
+  Restriction : Transition G1 S
+  Replication : Transition S G2
+  Division : Transition G2 M
+
+public export
+record CommandEnvelope where
+  constructor MkEnvelope
+  version : Nat
+  supported : version = Abi.Types.abiVersion
+  seat : Seat
+  sequence : Nat

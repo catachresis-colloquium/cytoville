@@ -1,0 +1,14 @@
+{
+  "profile": "cytoville",
+  "version": 1,
+  "packageFormat": "cytoville-package/1",
+  "sourceProfileVersion": "1.0.0",
+  "requiredCollections": ["SPECIMENS","SPECIMEN_ORDER","LOCATIONS","LOCATION_ORDER","ORGANELLES","CAREERS","SCENARIOS","SCENARIO_ORDER","WEATHER","DIFFICULTY","ROUTES","ALL_COURSES","EVENTS"],
+  "requiredDistricts": ["home","university","trophic","boutique","diner","gym","checkpoint","solar","detritus","security","rift"],
+  "questKinds": ["size","earned","career","organelles","organelle","transcription","phase","signature","homeostasis","pathways","mitosis"],
+  "maxCycles": 10000,
+  "runtimeValidator": "cytoville-core::Content::validate",
+  "ontology": "individual-cell-ontogeny",
+  "geometry": "city-map",
+  "timing": "turn-based"
+}

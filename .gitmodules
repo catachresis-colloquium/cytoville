@@ -1,0 +1,3 @@
+[submodule "external/evil-weevil"]
+	path = external/evil-weevil
+	url = https://github.com/catachresis-colloquium/evil-weevil

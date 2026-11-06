@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+[package]
+name = "cytoville-budget"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+[dependencies]
+creusot-std.workspace = true
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ["cfg(creusot)"] }

@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+[package]
+name = "cytoville-bevy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+[dependencies]
+bevy = { version = "0.20", default-features = false, features = ["2d", "ui", "audio"] }
+cytoville-core.workspace = true
+cytoville-runtime.workspace = true
+enaction-time.workspace = true
+serde_json.workspace = true

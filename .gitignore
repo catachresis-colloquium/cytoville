@@ -144,3 +144,15 @@ verification/proofs/coq/.*.aux
 # Agda compiled proof artifacts
 verification/proofs/agda/*.agdai
 
+
+# Cytoville local play/build artifacts
+/cytoville-save.json
+/cytoville-save.tmp
+/cytoville-connection.json
+/server/_build/
+/server/deps/
+/src/interface/build/
+/verification/creusot/target/
+/verif/
+/_creusot_erasure/
+/.why3find/

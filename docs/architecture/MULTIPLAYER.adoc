@@ -1,0 +1,31 @@
+= Cytoville multiplayer
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+The Bevy client sends commands; it does not simulate other players or declare
+outcomes. Elixir's Registry and DynamicSupervisor own one session GenServer per
+game. Each session exclusively owns a Rust Port running `cytoville-server`.
+The worker shares the exact rules and validation library used in solo play.
+
+The transport is newline-delimited JSON over TCP. Create specifies session,
+specimen, scenario, difficulty and seed. The server returns seat 0, a random
+invitation key and a distinct resume key. Join consumes the invitation once and
+returns seat 1 with its own resume key. Resume authenticates an existing seat.
+Commands carry `expected_revision` and the tagged Rust command; the connection's
+authenticated seat is authoritative. Duplicate or stale revisions fail without
+changing state. Only the active seat can act, and encounters gate other actions.
+
+The client polls state every 500 ms on a background thread. After a lost reply it
+reconnects with its resume key and fetches state rather than replaying a command
+whose acceptance is uncertain. Both humans receive full public game state.
+The native rival is disabled only for these two-human sessions.
+
+Limits: 64 sessions, 64 KiB requests, 30 requests per second per connection,
+60-second idle sockets, 30-minute session inactivity and a 10-second worker reply
+timeout. Session state is in memory: a worker/server restart ends that session.
+There is no matchmaking, account system, cloud deployment or durable multiplayer
+store. Default binding is loopback. Internet operators must supply encrypted,
+authenticated ingress; bearer keys must not be published in logs.
+
+This follows the Elixir supervision / native-authority separation requested for
+IDApTIK-like multiplayer. It does not claim to reuse an IDApTIK server that the
+inspected repository did not contain.

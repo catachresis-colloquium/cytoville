@@ -21,14 +21,27 @@ jobs:
   rust-ci:
     name: Rust standalone tools and workspace gate
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 60
     permissions:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
+          submodules: recursive
+
+      - name: Install pinned game native tools
+        run: bash scripts/install-ci-native.sh
+
+      - name: Install BEAM for authoritative multiplayer tests
+        uses: erlef/setup-beam@v1.24.1
+        with:
+          otp-version: "28.3.1"
+          elixir-version: "1.19.4"
+
+      - name: Install Rust
+        run: rustup toolchain install 1.99.1 --profile minimal --component rustfmt,clippy && rustup default 1.99.1
 
       - name: Compile standalone Rust helpers and run tests
         run: |
@@ -45,6 +58,5 @@ jobs:
             bash tests/workflows/archetype_lock_merge_test.sh
           fi
           if [ -f Cargo.toml ]; then
-            cargo check --all-targets --locked
-            cargo test --locked
+            bash scripts/cytoville-check.sh
           fi
