@@ -39,8 +39,8 @@
   (native-inputs (map spec->input (list "git" "bash" "coreutils" "nss-certs" "just" "mise"
                                         "shellcheck" "chez-scheme" "gmp" "gcc-toolchain" "zig")))
   (home-page "https://github.com/catachresis-colloquium/cytoville")
-  (synopsis "Rhodium Standard Repository template")
-  (description "The estate's repository template: the RSR layout, an Idris2 ABI
-seam with a Zig FFI, CI gates, and the provisioning set (launcher, Justfile,
-mise, Guix, setup and AI-assisted installation guides).")
-  (license license:mpl2.0))
+  (synopsis "Turn-based protist life simulation")
+  (description "Cytoville's source package: Rust game rules and Bevy client,
+Idris2 ABI, Zig native rival, Elixir multiplayer and a UMS content adapter.
+This copies the source tree; it does not claim a hermetic native build.")
+  (license (list license:agpl3+ license:cc-by-sa4.0 license:mpl2.0)))
