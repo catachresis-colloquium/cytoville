@@ -1,0 +1,60 @@
+= Native alpha validation receipt
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+Date: 2026-11-06. Platform: x86-64 Debian under WSL.
+Rust/Cargo 1.99.1; Zig 0.16.0; Idris2 0.8.0-b6cbc25d5;
+Elixir 1.19.4; Erlang/OTP 28 (ERTS 16.2).
+
+== Production proof
+
+`cargo creusot -p cytoville-budget` completed successfully with three proved
+verification files. The exact production source SHA-256 is
+`bd42d07127d3968b26e4df1879b180dd5266dc6a168f628ca0005846994be10c`.
+The core calls this crate directly for checked spending, bounded transfers and
+two-seat indexing. A separate negative control returning 1 under the
+postcondition `result@ == 0` compiled and failed proof as an unproved goal.
+
+Creusot 0.13.0 source: `318615be3b8bbc60d1f6d52469ba5c0bdebed4f1`;
+Rust nightly-2026-06-22; upstream Why3 pin
+`54c92f96bb0711d6e991c18f10bfbc08d90d028b`; why3find pin
+`eab37557d3e24e1913a3c4f44bc5528ef497c6c9`.
+Installed provers: Alt-Ergo 2.6.2, Z3 4.15.3, CVC4 1.8 and CVC5 1.3.1.
+Trusted boundary: Creusot translation, Rust semantics support, Why3, solvers and
+their host toolchains. This proves only the stated function contracts.
+
+== Executed integration checks
+
+* Idris ABI generation, Rust/Zig size and offset assertions, Zig native tests,
+  and a linked C API caller: pass on the stated target.
+* Rust core/runtime/UMS tests: pass, including 63 browser-oracle starts and 378
+  commands, action bounds, save replay and scenario termination.
+* `cargo clippy --workspace --all-targets --locked -- -D warnings`: pass.
+* Elixir two-client integration with the actual Rust worker: pass. Includes
+  complete shared content, invitation checking, seat ownership, revision
+  rejection, turn handoff and reconnect.
+* UMS registry/profile tests and generic Cytoville package compilation: pass.
+  The resulting package loads in the actual Bevy native client.
+* Native graphics smoke: window rendered and screenshot captured. WSL used
+  software Vulkan rendering; an audio buffer underrun was observed. This is
+  not a human playtest or an accessibility/visual-parity certification.
+
+Local RSR validation, root-shape, placeholder, SPDX, language/tool mapping,
+container-pin, docs-format and no-a2ml gates are tracked separately from the
+proof claim. CI results are available in the repository's Actions history.
+Hosted Rust/native/Idris/Elixir CI passed at game commit
+`7174c86e527ead50568f790c1b4a1351c3a25eec` (Actions run `42273537091`).
+
+Hosted proof execution is blocked by the organisation's Actions allowlist:
+GitHub rejects `hyperpolymath/cicd-suite/.github/workflows/creusot-gate.yml` at
+the pinned commit before creating any jobs. The local proof above is executed
+evidence; it is not a claim of a green hosted proof job. An organisation owner
+must approve that reusable workflow before hosted execution can start.
+The inherited Pages, mail and editor-check actions can encounter the same
+organisation restriction; no access policy was widened by this migration.
+
+The template-only chain-mint archetype test is explicitly inapplicable to this
+instantiated game: its required native gitlink is unsupported by chain mint.
+The game boundary tests replace the template's obsolete owned-string API tests.
+
+No whole-game formal correctness, production internet security, durable hosted
+multiplayer or Windows/macOS release certification is asserted.

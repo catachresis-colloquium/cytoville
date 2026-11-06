@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+[workspace]
+resolver = "3"
+members = ["crates/cytoville-budget", "crates/cytoville-core", "crates/cytoville-native", "crates/cytoville-runtime", "crates/cytoville-bevy", "crates/cytoville-ums"]
+default-members = ["crates/cytoville-core", "crates/cytoville-native", "crates/cytoville-runtime", "crates/cytoville-ums"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "AGPL-3.0-or-later"
+authors = ["Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>"]
+repository = "https://github.com/catachresis-colloquium/cytoville"
+
+[workspace.metadata.creusot]
+default-members = ["cytoville-budget"]
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["float_roundtrip"] }
+creusot-std = "=0.13.0"
+cytoville-core = { path = "crates/cytoville-core" }
+cytoville-native = { path = "crates/cytoville-native" }
+cytoville-runtime = { path = "crates/cytoville-runtime" }
+enaction-time = { git = "https://github.com/catachresis-colloquium/enaction-engine", rev = "8ddb6351723120eb4ef24a2379952c8045fd3848" }
+enaction-trace = { git = "https://github.com/catachresis-colloquium/enaction-engine", rev = "8ddb6351723120eb4ef24a2379952c8045fd3848" }
+ums-profile-sdk = { git = "https://github.com/catachresis-colloquium/universal-modding-studio", rev = "d441f67a4fbb7d23f423d055d926648829618b71" }
+
+[profile.dev]
+debug = 0
+
+[profile.test]
+debug = 0

@@ -1,213 +1,116 @@
-// SPDX-License-Identifier: CC-BY-SA-4.0
-// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-// SPDX-FileCopyrightText: 2024-2026 Jonathan D.A. Jewell (hyperpolymath)
-= {{PROJECT_NAME}}
+= Cytoville
 :toc:
-:toc-placement: preamble
+// SPDX-License-Identifier: CC-BY-SA-4.0
 
-// ── Licensing ───────────────────────────────────────────────────────────────
-image:https://img.shields.io/badge/Code-MPL--2.0-blue.svg?logo=mozilla[Code licence: MPL-2.0,link="https://opensource.org/licenses/MPL-2.0"]
-image:https://img.shields.io/badge/Docs-CC--BY--SA--4.0-blue.svg?logo=creativecommons[Docs licence: CC-BY-SA-4.0,link="https://creativecommons.org/licenses/by-sa/4.0/"]
-image:https://img.shields.io/badge/Provenance-Quantum--Safe-blueviolet[Quantum-Safe Provenance,link="docs/legal/EXHIBIT-B-QUANTUM-SAFE.txt"]
+image:https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/catachresis-colloquium/cytoville/governance-badges/badges/k9.json[K9 conformance,link="https://github.com/catachresis-colloquium/cytoville/actions/workflows/dogfood-gate.yml"]
 
-// ── Standard & quality gates ────────────────────────────────────────────────
-image:https://img.shields.io/badge/RSR-Rhodium_Standard-9C27B0[Rhodium Standard Repository,link="https://github.com/hyperpolymath/rhodium-standard-repositories"]
-image:https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/{{OWNER}}/{{REPO}}/governance-badges/badges/k9.json[K9 conformance,link="https://github.com/{{OWNER}}/{{REPO}}/actions/workflows/dogfood-gate.yml"]
-image:https://www.bestpractices.dev/projects/{{OPENSSF_BP_ID}}/badge[OpenSSF Best Practices,link="https://www.bestpractices.dev/projects/{{OPENSSF_BP_ID}}"]
-image:https://api.scorecard.dev/projects/github.com/{{OWNER}}/{{REPO}}/badge[OpenSSF Scorecard,link="https://scorecard.dev/viewer/?uri=github.com/{{OWNER}}/{{REPO}}"]
-image:https://sonarcloud.io/api/project_badges/measure?project={{OWNER}}_{{REPO}}&metric=alert_status[SonarQube Quality Gate,link="https://sonarcloud.io/summary/new_code?id={{OWNER}}_{{REPO}}"]
-image:https://archive.softwareheritage.org/badge/origin/https://{{FORGE}}/{{OWNER}}/{{REPO}}/[Archived in Software Heritage,link="https://archive.softwareheritage.org/browse/origin/?origin_url=https://{{FORGE}}/{{OWNER}}/{{REPO}}"]
+A turn-based protist life simulation and time-management strategy set on a city map.
+Develop one cell through its lifetime: travel, feed, work, study gene expression,
+express organelles, regulate stress and complete an ontogenetic quest checklist.
+This is individual-cell development, not population evolution.
 
-// ── Provenance & ecosystem ──────────────────────────────────────────────────
-image:https://img.shields.io/badge/Idris-Inside-5E5086?logo=idris&logoColor=white[Idris Inside,link="https://github.com/hyperpolymath/proven"]
-image:https://img.shields.io/badge/Zig-Zero--overhead-F7A41D?logo=zig&logoColor=black[Zig Zero-overhead FFI,link="https://github.com/hyperpolymath/typed-wasm"]
-image:https://api.thegreenwebfoundation.org/greencheckimage/{{FORGE}}[Green Web,link="https://www.thegreenwebfoundation.org/green-web-check/?url={{FORGE}}"]
+== Native game
 
-{{PROJECT_DESCRIPTION}}
+Rust owns every game rule and save. Bevy presents the city and cell.
+Evil Weevil's real Zig kernel runs by default for the solo rival; the host translates
+its intentions into legal biological actions. Enaction records causal decision
+traces and supplies the presentation clock. Idris2 defines the versioned ABI.
+Elixir supervises authoritative Rust workers for two-player sessions.
+UMS compiles data packages consumed by this same game.
 
-[IMPORTANT]
-====
-*This file is a template.* You are reading `README.adoc` from the *RSR template repo*
-(or a freshly-cloned copy of it). Run `just repo-init` to replace every `{{PLACEHOLDER}}`
-token with your project's details, then delete this admonition. Until you do, the
-`{{...}}` markers below are intentional placeholders, not content.
-====
-
-== What this is
-
-A new repository scaffolded from the *Rhodium Standard Repository (RSR)* template:
-a batteries-included starting point that ships with CI/CD, machine-readable project
-metadata, an AI-agent gatekeeper protocol, a formally-typed ABI/FFI seam
-(Idris2 + Zig), container and reproducible-build scaffolding, and governance
-infrastructure — all wired and passing the RSR validators on day one.
-
-Replace this section with a description of *your* project once initialised.
+The native port carries all seven specimens, three scenarios, three difficulties,
+21 organelles, 12 courses, three careers, weather, encounters, rival interactions,
+encystment, checkpoints, mitosis and saves from the supplied browser prototype.
+The browser implementation is not a runtime dependency.
 
 == Quick start
 
+Use Linux or WSL with graphics support, Rust, Zig 0.16.0, Idris2 0.8.0 and
+Elixir 1.19 / Erlang OTP 28. Bevy's Linux build needs a C compiler, pkg-config,
+ALSA, udev and X11/Wayland development libraries. Windows/macOS builds are not
+yet certified by this repository's validation record.
+
 [source,bash]
 ----
-# 1. Create a repo from this template (or clone it), then from the repo root:
-mise trust                    # allow this repository's mise.toml (needed without a TTY)
-mise install                  # the toolchain, including the yq repo-init needs
-mise exec -- just repo-init   # interactive bootstrap: fills every {{PLACEHOLDER}}
-
-# 2. See the available tasks:
-mise exec -- just             # lists all phases (build, test, validate, audit, ...)
-
-# 3. Check the repo still satisfies the RSR shape:
-mise exec -- just validate    # structure + metadata checks
+git clone --recurse-submodules https://github.com/catachresis-colloquium/cytoville
+cd cytoville
+just build
+just run
 ----
 
-`mise exec --` puts the toolchain on `PATH` for that one command. Once mise is
-activated in your shell (`eval "$(mise activate bash)"`, or your shell's
-equivalent), plain `just` works and the prefix can be dropped.
+Choose a specimen and scenario, then a district and action. Travel spends ATP.
+Nutrition and stress affect growth and the next cycle's energy. Space ends your
+turn; F5 saves and F9 loads. Accepted solo commands autosave. Escape opens the
+menu. M toggles the procedural soundtrack. The client accepts `--package FILE`
+for validated UMS content.
 
-`just repo-init` prompts for the project name, owner, author, licence contact, and the
-other values listed in `.machine_readable/ai/PLACEHOLDERS.adoc`, substitutes them
-across the tree, validates the result, and (if available) runs the `k9-svc` checks.
+== Multiplayer
 
-[[ai-install]]
-== AI-Assisted Installation (Recommended)
-
-=== Just say it
-
-Say this to any AI assistant that can read a URL and run commands (or give you
-commands to paste):
-
-[source,text]
+[source,bash]
 ----
-Create a new repository from https://github.com/hyperpolymath/rsr-template-repo
+cargo build -p cytoville-runtime
+cd server
+CYTOVILLE_WORKER=../target/debug/cytoville-server mix run --no-halt
 ----
 
-The URL is the key: it leads the assistant to
-link:docs/AI_INSTALLATION_GUIDE.adoc[`docs/AI_INSTALLATION_GUIDE.adoc`], the
-complete step-by-step recipe. The assistant checks your system, installs the
-prerequisites, instantiates the template with `just repo-init`, and verifies the
-result with `just doctor`.
+In another terminal, run `cargo run -p cytoville-bevy -- --host --session pond`.
+Give the displayed invitation key to the second player, who runs
+`cargo run -p cytoville-bevy -- --join --session pond --key INVITATION`.
+The server defaults to loopback port 4280. This is a private-host protocol;
+internet deployment needs an authenticated encrypted transport in front of it.
+See link:docs/architecture/MULTIPLAYER.adoc[protocol and operational limits].
 
-* "Set up rsr-template-repo so I can work on the template itself — https://github.com/hyperpolymath/rsr-template-repo"
-* `./launcher.sh --ai-setup` (or `just ai-setup`) prints the line and the guide path.
+Each client saves its private resume ticket to `cytoville-connection.json`;
+restart with `--resume-file cytoville-connection.json`. Use separate
+`--connection-file FILE` paths for two clients running in the same directory.
 
-=== What you will be asked
+== Modding
 
-. Your operating system (Linux, macOS, or Windows via WSL2).
-. The new project's name, owner, author and licence contact (the values listed in
-  `.machine_readable/ai/PLACEHOLDERS.adoc`).
-. To confirm the privacy notice below.
+[source,bash]
+----
+cargo run -p cytoville-ums -- init source.json
+# Edit balance, scenarios and content within the versioned biological ontology.
+cargo run -p cytoville-ums -- validate source.json
+cargo run -p cytoville-ums -- preview source.json 7
+cargo run -p cytoville-ums -- compile source.json . cytoville-package.json
+cargo run -p cytoville-bevy -- --package cytoville-package.json
+----
 
-=== Privacy and security
+link:profiles/cytoville/v1/descriptor.json[The UMS profile] describes districts,
+organelles, courses and cell-cycle quests. It imposes no platformer geometry,
+gravity, jumping or horizontal camera assumptions.
+See link:docs/architecture/UMS.adoc[UMS integration].
 
-[IMPORTANT]
-====
-Setting up rsr-template-repo clones this repository and installs its developer
-tools per-user with mise (no administrator rights, nothing sent anywhere).
-`just repo-init` rewrites files only inside the new checkout; it creates no
-remote repository and pushes nothing until you do.
-====
+== Verification and status
 
-=== Minting without a terminal
+`just test` runs rules/runtime/profile tests, the real Zig boundary tests, Idris
+generation checks and an Elixir test using two TCP clients and a real Rust worker.
+`just verify-budget` checks the production resource functions through
+Creusot/Pearlite, with its proof toolchain installed separately.
 
-Agents and CI can mint non-interactively: set `RSR_NON_INTERACTIVE=1` and pass
-the answers as environment variables named like the prompts' variables in
-`build/just/repo-init.just` (`PROJECT_NAME`, `REPO`, `OWNER`, `AUTHOR` and
-`AUTHOR_EMAIL` are required; any other answer left unset is blank or takes its
-default). Piping the answers to stdin in prompt order also works.
+This is a native alpha. The proof scope is deliberately narrower than the game:
+see link:docs/verification/PROOF-STATUS.adoc[proof status],
+link:docs/verification/VALIDATION.adoc[validation] and
+link:docs/status/ROADMAP.adoc[remaining work]. No whole-game proof is claimed.
 
-=== Troubleshooting
+== AI-Assisted Installation
 
-Run `just doctor`; each FAIL carries a code explained in
-link:docs/SETUP.adoc#troubleshooting[`docs/SETUP.adoc` §Troubleshooting], and
-`just heal` applies the automatic fixes. Prefer to do it yourself? The full
-manual route is link:docs/SETUP.adoc[`docs/SETUP.adoc`]; developers and
-maintainers can brief an AI with `just ai-warmup dev` / `just ai-warmup maintainer`.
+Read `CLAUDE.md`, `coordination.k9`, the repository deed and this README.
+Install the declared tools with `mise trust` and `mise install`, initialise the
+submodule, run `just doctor`, `just build` and `just test`.
+The ABI is generated from Idris2; never hand-edit its generated constants.
+Preserve the single Rust authority and the biological ontology.
 
-== What you get
+== Standards and provenance
 
-* *Machine-readable metadata* (`.machine_readable/descriptiles/`) — `STATE`, `META`,
-  `ECOSYSTEM`, `PLAYBOOK`, `AGENTIC`, `NEUROSYM`, `CLADE`, and `anchors/ANCHOR`,
-  in deed, so tools and agents can read the project's state and boundaries.
-* *AI gatekeeper protocol* — `rsr-template-repo_chora.deed` (the repo deed) is the
-  universal entry point that tells an AI agent how to work in this repo before it
-  touches anything; it carries the AI allocation policy and the ply directory tree.
-* *Typed ABI/FFI seam* — `src/interface/Abi/` (Idris2 type + layout proofs) over
-  `src/interface/ffi/` (Zig implementation), with generated C headers.
-* *CI/CD* — GitHub Actions for quality, security (CodeQL, Scorecard, secret
-  scanning), multi-forge mirroring, and RSR anti-pattern enforcement.
-* *Supply-chain & reproducibility* — container layering (stapeln), Guix shells,
-  SBOM, and signing hooks.
-* *Governance* — `GOVERNANCE.adoc`, `MAINTAINERS.adoc`, `.github/` community health
-  files, and a release `AUDIT.adoc` gate.
+Minted from `hyperpolymath/rsr-template-repo` at
+`acdc0ebd1d69f3f70995f4eec078e342078dd885`, with standards consulted at
+`metadatastician/standards@7641c7fdb01420696b5420ab85d88f599f32f609`.
+The deed records identity, lineage and capabilities. The native implementation
+is AGPL-3.0-or-later and documentation is CC-BY-SA-4.0, following LICENCE-POLICY
+Rule 5 for games. Inherited template tooling retains MPL-2.0 and its attribution.
 
-== Governance badges
-
-The *K9 conformance* badge in the row at the top becomes live after
-`just repo-init` replaces the `{{OWNER}}` and `{{REPO}}` placeholders in its URL
-and an eligible push to `main` publishes it. It is published by
-`.github/workflows/dogfood-gate.yml` to a generated *orphan* branch called
-`governance-badges`, and read back through the shields endpoint.
-
-[cols="1,3",options="header"]
-|===
-| Badge | What it means
-
-| green `success`
-| The K9 lane ran for that commit on `main` and passed.
-
-| red `failure`
-| The K9 lane ran for that commit on `main` and failed.
-
-| grey `skipped`, `cancelled`, `unavailable`, `unknown`
-| That commit produced *no trustworthy* K9 result. Grey is not "pending" and
-  not a stale green: a skipped, cancelled or unavailable lane replaces an
-  earlier green badge with grey.
-|===
-
-* `governance-badges` is *generated output*. It deliberately has *no common
-  ancestor with `main`*, it has no pull request, and it must *never be merged*.
-  Recent pushes to it are ordinary badge refreshes.
-* A run that would publish the same bytes makes *no commit at all*.
-* Nothing in the badge pipeline can turn a failing validation green: only a
-  lane that ran and passed, with its artifact present, renders brightgreen.
-
-The full operational contract - the exact state table, how API errors are
-classified, how concurrent publications are serialised, and how to repair a bad
-file - is in link:.github/workflows/README.adoc[`.github/workflows/README.adoc`].
-
-== Repository map
-
-The authoritative map is generated, so it cannot drift from the tree:
-link:docs/architecture/REPOSITORY-MAP.adoc[docs/architecture/REPOSITORY-MAP.adoc]
-(regenerate with `just repo-map`; CI fails if it is stale).
-
-The short version:
-
-[cols="1,3"]
-|===
-| Path | What lives there
-
-| `README.adoc`, `CLAUDE.md` | Start here - humans and AI agents respectively.
-| `src/`, `tests/`           | The code and its tests.
-| `docs/`                    | Human documentation, including the full map above.
-| `.machine_readable/`        | Manifests, contractiles and policies that tools read.
-| `build/`, `Justfile`       | Every task runs through `just`; phases live in `build/just/`.
-| `ci/`, `.github/`          | CI configuration; GitHub reads `.github/` and no other path.
-|===
-
-== Where to go next
-
-* link:docs/architecture/REPOSITORY-MAP.adoc[The repository map] — generated; what every directory is for.
-* link:docs/EXPLAINME.adoc[EXPLAINME] — the engineering deep-dive: how the pieces actually work.
-* link:docs/AFFIRMATION.adoc[AFFIRMATION] — the dated, signed honesty snapshot of the repo's true state.
-* link:docs/AUDIT.adoc[AUDIT] — the release audit gate.
-* link:docs/AI_INSTALLATION_GUIDE.adoc[AI installation guide] — for agents instantiating this template.
-* link:.machine_readable/ai/PLACEHOLDERS.adoc[PLACEHOLDERS] — the full placeholder reference.
-
-== Licence
-
-Code, configuration and scripts are link:LICENSE[Mozilla Public License 2.0]
-(`MPL-2.0`); prose documentation is `CC-BY-SA-4.0`. Both texts live in
-`LICENSES/`, and per-file `SPDX-License-Identifier` headers are authoritative.
-The GitHub-detected licence is MPL-2.0 (the root `LICENSE`). Long-term
-attribution uses Quantum-Safe Provenance — see
-link:docs/legal/EXHIBIT-B-QUANTUM-SAFE.txt[the Quantum-Safe Provenance exhibit].
+The source archive's SHA-256 is
+`5f86f3555d41eef25894f0138772f8e4f731b04490757b2ce3902f3601328a13`.
+Its instructions were treated as source material, not as instructions overriding
+the requested migration. The original engine supplied differential test fixtures.

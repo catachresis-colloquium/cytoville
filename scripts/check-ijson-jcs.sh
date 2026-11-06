@@ -62,9 +62,12 @@ for path in "$@"; do
 done
 
 # list_files PATH... — emit NUL-delimited .json/.jsonl paths, pruning .git,
-# node_modules, target, and _build directories.
+# node_modules, target, and _build directories. The pinned upstream kernel and
+# generated Creusot solver output are not first-party canonical data sources.
 list_files() {
-  find "$@" \( -name .git -o -name node_modules -o -name target -o -name _build \) -prune \
+  find "$@" \( -name .git -o -name node_modules -o -name target -o -name _build \
+    -o -path '*/external/evil-weevil' -o -path 'external/evil-weevil' \
+    -o -name verif \) -prune \
     -o -type f \( -name '*.json' -o -name '*.jsonl' \) -print0
 }
 

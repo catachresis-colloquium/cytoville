@@ -1,29 +1,25 @@
-// SPDX-License-Identifier: MPL-2.0
-// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-//
-// Template FFI build (Zig 0.15.2+).
-//
-//   zig build test    runs the unit tests in src/main.zig and test/integration_test.zig
-//
-// src/main.zig carries template tokens until `just repo-init` fills them, so the
-// test step compiles only in an instantiated repository.
-
+// SPDX-License-Identifier: AGPL-3.0-or-later
 const std = @import("std");
-
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
-
-    const test_step = b.step("test", "Run the FFI unit and integration tests");
-    for ([_][]const u8{ "src/main.zig", "test/integration_test.zig" }) |path| {
-        const t = b.addTest(.{
-            .root_module = b.createModule(.{
-                .root_source_file = b.path(path),
-                .target = target,
-                .optimize = optimize,
-                .link_libc = true, // main.zig allocates with std.heap.c_allocator
-            }),
-        });
-        test_step.dependOn(&b.addRunArtifact(t).step);
-    }
+    const layout = b.createModule(.{ .root_source_file = b.path("../../../external/evil-weevil/src/interface/generated/ee_layout.zig") });
+    const abi = b.createModule(.{ .root_source_file = b.path("../../../external/evil-weevil/src/interface/ffi/src/abi.zig"), .target = target, .optimize = optimize });
+    abi.addImport("layout", layout);
+    const kernel = b.createModule(.{ .root_source_file = b.path("../../../external/evil-weevil/src/core/kernel.zig"), .target = target, .optimize = optimize });
+    kernel.addImport("abi", abi);
+    const ee = b.createModule(.{ .root_source_file = b.path("../../../external/evil-weevil/src/interface/ffi/src/main.zig"), .target = target, .optimize = optimize });
+    ee.addImport("abi", abi);
+    ee.addImport("kernel", kernel);
+    const own_layout = b.createModule(.{ .root_source_file = b.path("../generated/layout.zig") });
+    const root = b.createModule(.{ .root_source_file = b.path("src/main.zig"), .target = target, .optimize = optimize, .pic = true });
+    root.addImport("ee", ee);
+    root.addImport("abi", abi);
+    root.addImport("cyto_layout", own_layout);
+    root.addImport("cyto_offsets", b.createModule(.{ .root_source_file = b.path("../generated/offsets.zig") }));
+    const lib = b.addLibrary(.{ .name = "cytoville_native", .linkage = .static, .root_module = root });
+    lib.bundle_compiler_rt = true;
+    b.installArtifact(lib);
+    const tests = b.addTest(.{ .root_module = root });
+    b.step("test", "Run boundary and real-kernel tests").dependOn(&b.addRunArtifact(tests).step);
 }

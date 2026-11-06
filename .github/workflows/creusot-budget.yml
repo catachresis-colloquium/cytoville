@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+name: Production resource proofs
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: creusot-budget-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  budget:
+    uses: hyperpolymath/cicd-suite/.github/workflows/creusot-gate.yml@faba7124aee223098d33497bdadc96e111829752
+    with:
+      working_directory: crates/cytoville-budget
+      creusot_version: "0.13.0"
+      rust_nightly: "nightly-2026-06-22"
+      enforce_hollow: true
+# Provisioning deviation: the shared gate installs the pinned upstream proof
+# tools outside Guix. Scope and closure are recorded in PROOF-STATUS.adoc.

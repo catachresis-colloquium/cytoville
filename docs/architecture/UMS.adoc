@@ -1,0 +1,28 @@
+= UMS integration
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+`cytoville-ums` implements the real pinned UMS SDK validator, importer, exporter,
+generator, compiler and simulation-adapter traits. Its preview runs the actual
+Rust game rules with supplied commands and a deterministic seed. It uses two
+explicit seats and does not pretend to preview the native rival.
+
+The source document contains a versioned profile identity and the game's complete
+content object. Compilation validates the authoritative typed content and writes
+`cytoville-package/1`, including a SHA-256 digest of canonical JSON. The Bevy
+loader checks the envelope, digest and all game constraints before using it.
+The digest detects alteration; it is not an author-signature or trust decision.
+Packages contain data only, never executable code.
+
+`contracts/cytoville/v1/manifest.json` is game-owned. UMS's registry integration
+reads it through an explicit game-root path and emits the same package envelope.
+UMS checks the package boundary; Cytoville is the authority for biological rules.
+The UMS-side patch adds `ums-profile compile --profile cytoville --source FILE
+--game-root PATH --output FILE`, retaining the existing IDApTIK command.
+
+Upstream integration: `catachresis-colloquium/universal-modding-studio#104`.
+This game pins its tested commit `d441f67a4fbb7d23f423d055d926648829618b71`,
+so its SDK integration does not depend on the pull request being merged.
+
+The ontology consists of a city map, ATP/biomass budgets, courses, organelles,
+weather and cell-cycle checklists. Inspectors and canvas lenses are declared
+extension points; a bespoke graphical UMS city editor is still future work.

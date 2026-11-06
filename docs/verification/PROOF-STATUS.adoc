@@ -1,0 +1,33 @@
+= Proof status
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+[cols="2,1,4",options="header"]
+|===
+|Scope |State |Evidence and boundary
+|Idris ABI size arithmetic, seat involution, phase constructors
+|proven
+|`idris2 --build src/interface/abi.ipkg`; total definitions, no postulates or escape hatches. Trust Idris2 and its compiler. This is a contract-level claim.
+|Rust/Zig concrete layout agreement and native kernel calls
+|tested-only
+|Compile-time size/offset assertions, Zig boundary tests and a linked C caller; native x86-64 Linux. C ABI compiler/target layout remains trusted.
+|Production Rust resource functions
+|proven
+|Creusot 0.13.0 discharged all three function verification files in `crates/cytoville-budget/src/lib.rs`: checked spending, bounded transfer conservation, and the other-seat calculation. The game calls this crate directly. A deliberately false postcondition was rejected. See `RECEIPT.adoc` for execution evidence and trust boundary.
+|Rules, replay, packages and multiplayer
+|tested-only
+|Differential fixtures: 63 specimen/scenario/difficulty starts and 378 commands. Action boundaries, prerequisites, save replay, real native traces and two TCP clients exercise bounded cases.
+|Remaining first-party Rust and Elixir
+|open
+|No whole-game proof, deadlock proof, balancing proof or network-security proof is claimed.
+|===
+
+The proof policy is `metadatastician/standards/3-practice/PROOF-POLICY.adoc` at
+`7641c7fdb01420696b5420ab85d88f599f32f609`. Its closed status vocabulary is used.
+Contracts on production Rust are the authority; an Idris model is not substituted
+for proving Rust implementation behaviour.
+
+Toolchain provisioning deviation (open): this initial Windows/WSL validation
+builds Creusot 0.13.0 from upstream commit
+`318615be3b8bbc60d1f6d52469ba5c0bdebed4f1`, using its pinned
+nightly-2026-06-22 and installer, outside the inherited Guix/container scaffold.
+The game-specific reproducible proof container remains to be completed.

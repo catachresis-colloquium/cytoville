@@ -1,0 +1,19 @@
+= Validation record
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+Date: 2026-11-06. Host: Debian under WSL, x86-64.
+Rust 1.99.1, Zig 0.16.0, Idris2 0.8.0, Elixir 1.19 / OTP 28.
+
+The original browser engine generated the committed oracle fixtures before the
+port. They cover all seven specimens, three scenarios and three difficulties
+through initial state and six commands per combination. Tests compare numeric
+values semantically so JSON integer/float formatting is not a false mismatch.
+
+Additional suites exercise every initially available action in every district
+under expanded resource bounds, checkpoint/mitosis prerequisites, rejected
+encounter choices, predation transfer bounds, package tampering, deterministic
+native-rival replay and all scenario termination limits. UMS roundtrips run the
+actual core; Elixir's test starts two network clients and a real worker.
+
+These are bounded tests, not exhaustive proofs or player-balance certification.
+Final commands and outcomes are recorded in the repository's delivery evidence.

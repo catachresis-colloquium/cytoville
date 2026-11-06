@@ -1,0 +1,10 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+[package]
+name = "cytoville-ums"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+[dependencies]
+cytoville-core.workspace = true
+ums-profile-sdk.workspace = true
+serde_json.workspace = true

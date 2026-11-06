@@ -22,9 +22,9 @@ import? "build/contractile.just"
 mod provision 'build/just/provision.just'
 
 # Project metadata — customize these
-project := "rsr-template-repo"
-OWNER := "hyperpolymath"
-REPO := "rsr-template-repo"
+project := "cytoville"
+OWNER := "catachresis-colloquium"
+REPO := "cytoville"
 version := "0.1.0"
 tier := "infrastructure"  # 1 | 2 | infrastructure
 
@@ -91,16 +91,14 @@ import? "build/just/assess.just"
 # Build the project with every detected language's toolchain (here: pack/idris2 for
 # the ABI, then `zig build` in src/interface/ffi). Replace the delegation with a
 # body of your own when the project needs a different build.
-build: provision::build
+build: abi-generate
+    cargo build --workspace --locked
+    cd server && mix compile --warnings-as-errors
 
 # Build in release mode with optimizations
 build-release *args:
-    # TODO: Replace with your release build command
-    # Examples:
-    #   cargo build --release {{args}}
-    #   MIX_ENV=prod mix compile {{args}}
-    #   zig build -Doptimize=ReleaseFast {{args}}
-    @echo "FAIL: 'just build-release' is not wired yet — nothing was built. Edit the 'build-release' recipe." >&2; exit 1
+    cargo build --workspace --release --locked {{args}}
+    cd server && MIX_ENV=prod mix compile --warnings-as-errors
 
 # Build and watch for changes (requires entr or similar)
 build-watch:
@@ -134,15 +132,15 @@ clean-all: clean
 # (unit tests in src/main.zig, test/integration_test.zig). It compiles only after
 # `just repo-init` has filled the template tokens, so an un-initialised template
 # fails here loudly instead of reporting a pass over nothing.
-test: provision::test
+test:
+    bash scripts/cytoville-check.sh
 
 # Run tests with verbose output
-test-verbose: provision::test
+test-verbose: test
 
 # Smoke test
 test-smoke:
-    # TODO: Add basic sanity checks
-    @echo "FAIL: 'just test-smoke' is not wired yet — no smoke check ran. Edit the 'test-smoke' recipe." >&2; exit 1
+    cargo run -p cytoville-bevy -- --play --smoke-seconds 15
 
 # Run end-to-end tests (full pipeline: build → run → verify)
 e2e:
@@ -265,21 +263,39 @@ fix: fmt
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # Format all source files [reversible: git checkout]
-fmt: provision::fmt
+fmt:
+    cargo fmt --all
+    zig fmt src/interface/ffi/build.zig src/interface/ffi/src/main.zig
+    cd server && mix format
 
 # Check formatting without changes
-fmt-check: provision::fmt-check
+fmt-check:
+    cargo fmt --all --check
+    zig fmt --check src/interface/ffi/build.zig src/interface/ffi/src/main.zig
+    cd server && mix format --check-formatted
 
 # Run linter (`zig fmt --check` on src/interface/ffi; like `test`, it parses the
 # FFI sources only after `just repo-init` has filled the template tokens)
-lint: provision::lint
+lint:
+    cargo clippy --workspace --all-targets --locked -- -D warnings
+    cd server && mix compile --warnings-as-errors
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # RUN & EXECUTE
 # ═══════════════════════════════════════════════════════════════════════════════
 
 # Run the application (N/A for a library; wire a "run" step or executable to enable)
-run: provision::run
+run *args:
+    cargo run -p cytoville-bevy -- {{args}}
+
+# Regenerate the ABI from the total Idris2 source.
+abi-generate:
+    idris2 --build src/interface/abi.ipkg
+    src/interface/build/exec/cytoville-abi-gen
+
+# Prove the production resource module through Creusot/Pearlite and Why3.
+verify-budget:
+    cargo creusot -p cytoville-budget
 
 # Run with verbose output
 run-verbose: run
@@ -632,7 +648,7 @@ opsm: provision::opsm
 
 # Guided tour of key features
 tour:
-    @echo "=== rsr-template-repo Tour ==="
+    @echo "=== cytoville Tour ==="
     @echo ""
     @echo "1. Project structure:"
     @ls -la
@@ -647,12 +663,12 @@ tour:
 
 # Open feedback channel with diagnostic context
 help-me:
-    @echo "=== rsr-template-repo Help ==="
+    @echo "=== cytoville Help ==="
     @echo "Platform: $(uname -s) $(uname -m)"
     @echo "Shell: $SHELL"
     @echo ""
     @echo "To report an issue:"
-    @echo "  https://github.com/hyperpolymath/rsr-template-repo/issues/new"
+    @echo "  https://github.com/catachresis-colloquium/cytoville/issues/new"
     @echo ""
     @echo "Include the output of 'just doctor' in your report."
 

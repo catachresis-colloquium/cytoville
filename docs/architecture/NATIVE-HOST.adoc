@@ -1,0 +1,30 @@
+= Native host and biological AI
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+`cytoville-core` is a safe Rust state machine. A command is checked and applied
+to an owned copy; rejected commands leave the prior state intact. All random
+choices use saved deterministic state. Floating point stats retain the source
+prototype's fractional values; integer ATP and biomass use checked spending.
+
+`cytoville-runtime` hosts the core and the real Evil Weevil decision kernel.
+The Zig bridge translates cell health, nutrition, contact and position to the
+kernel's fixed-point snapshot. Native memory is serialised with the save.
+The legal-action planner translates reload to feeding, flee to stress reduction
+and attack to competitive biological interaction. The host always checks ATP,
+biomass, organelle prerequisites, cell phase and quest prerequisites.
+
+Enaction traces distinguish affective distress, conative intent and behavioural
+selection with causal edges. A valid trace and native memory survive save/load.
+Enaction FixedStep drives visual animation only; wall-clock frame rate cannot
+change the turn-based authoritative simulation.
+
+The Idris2 package defines ABI sizes, version and typed seats/phase transitions.
+Generated constants are consumed by both Rust and Zig; both languages assert
+their native struct sizes. C callers own all buffers; the bridge retains none.
+These checks establish the declared interface, not a proof of the foreign
+kernel's memory safety or the entire Rust game. Consult the proof ledger.
+
+Two browser defects are intentionally corrected: encounter requirements cannot
+be bypassed through direct commands, and predation cannot transfer more biomass
+than the victim owns. The original browser render and audio code is replaced by
+the native presentation rather than embedded in the game.

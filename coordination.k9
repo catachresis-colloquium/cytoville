@@ -1,0 +1,40 @@
+K9!
+# SPDX-License-Identifier: AGPL-3.0-or-later
+metadata:
+  schema: k9-coordination
+  schema_version: 1.2.0
+  last_updated: 2026-11-06
+project:
+  name: "cytoville"
+  description: "Turn-based protist life simulation on a city map"
+  license: AGPL-3.0-or-later
+  repo: catachresis-colloquium/cytoville
+  languages:
+    - Rust
+    - Idris2
+    - Zig
+    - Elixir
+  build_system: just
+  runtime: native
+invariants:
+  - id: one-simulation
+    rule: "Bevy and Elixir use the same authoritative Rust simulation"
+    reason: "Avoid client/server rule divergence"
+    severity: critical
+  - id: individual-ontogeny
+    rule: "Model one cell's development; do not substitute population evolution"
+    reason: "Preserve the game's scientific and gameplay ontology"
+    severity: critical
+  - id: truthful-proofs
+    rule: "Proof claims must name actual checked production code and evidence"
+    reason: "metadatastician/standards PROOF-POLICY"
+    severity: critical
+  - id: native-rival
+    rule: "Evil Weevil is the default solo rival decision kernel"
+    reason: "Exercise the real integration in normal gameplay"
+    severity: high
+protected:
+  - path: src/interface/Abi/
+    reason: "Authoritative ABI definitions; regenerate and compare consumers"
+  - path: contracts/
+    reason: "Versioned contracts consumed by UMS"
