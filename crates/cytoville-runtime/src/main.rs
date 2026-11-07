@@ -120,7 +120,7 @@ mod tests {
     #[test]
     fn large_valid_content_is_sent_once_and_oversized_transitions_are_atomic() {
         let mut content = Content::builtin();
-        content.specimens.get_mut("euglena").unwrap().name = "x".repeat(5 * 1024 * 1024);
+        content.specimens.get_mut("euglena").unwrap().blurb = "x".repeat(5 * 1024 * 1024);
         content.validate().unwrap();
         let mut runtime = None;
         let reply = respond(new_game(), &mut runtime, &mut content).unwrap();
@@ -128,7 +128,7 @@ mod tests {
         assert!(reply.get("game").is_none());
         assert!(serde_json::to_vec(&reply).unwrap().len() < 8 * 1024 * 1024 - 1024);
         let previous = serde_json::to_value(&runtime).unwrap();
-        content.specimens.get_mut("euglena").unwrap().name = "x".repeat(8 * 1024 * 1024);
+        content.specimens.get_mut("euglena").unwrap().blurb = "x".repeat(8 * 1024 * 1024);
         assert_eq!(
             respond(new_game(), &mut runtime, &mut content).unwrap_err(),
             "Session response exceeds transport limit"
