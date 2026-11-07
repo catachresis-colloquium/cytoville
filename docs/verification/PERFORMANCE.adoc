@@ -61,3 +61,30 @@ invalidate the cached map. Animation changes transforms, not layout dimensions.
 
 Release measurements on a hardware adapter, repeated-run variance, end-to-end
 input latency and turn/network profiling remain separate acceptance work.
+
+== Windows latency investigation, 2026-11-07
+
+The owner reports slow clicks, cursor/window movement, startup and shutdown.
+Update cadence alone did not capture this experience. A native Vulkan run on
+the RTX 4070 Laptop GPU recorded 8,666 ms from profiler initialisation to the
+first app update, with 16.681 ms median and 22.927 ms p95 subsequent update
+intervals. It included user interaction and was not a controlled benchmark.
+These observations do not establish the cause or show that responsiveness is
+fixed. A previous DX12 catalogue run also rendered correctly, but is not an
+equivalent workload comparison and does not justify changing the default.
+
+`startup_to_first_update_ms` excludes process loading before profiler startup
+and does not mean first visible frame. `exit_request_to_app_return_ms` is
+recorded only when an AppExit message was observed; it excludes teardown after
+App::run returns. An absent metric means no observation, not zero latency.
+
+For isolated diagnostics, `--low-latency-probe` requests at most one queued
+frame (an API hint), and `--no-audio-probe` omits audio plugin registration.
+Neither changes the default or claims a demonstrated fix. Set WGPU_BACKEND
+to `vulkan` or `dx12` for process-local renderer comparisons. Record workload,
+window size, driver, other system load and the chosen switches.
+
+Official PresentMon 2.6.0 was checksum-verified but refused ETW capture with
+access denied. Windows requires an elevated trace process or membership of
+Performance Log Users. No privileges or group membership were changed.
+Click-to-photon and presentation-queue measurements remain outstanding.

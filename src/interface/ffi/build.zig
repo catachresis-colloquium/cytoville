@@ -18,7 +18,7 @@ pub fn build(b: *std.Build) void {
     root.addImport("cyto_layout", own_layout);
     root.addImport("cyto_offsets", b.createModule(.{ .root_source_file = b.path("../generated/offsets.zig") }));
     const lib = b.addLibrary(.{ .name = "cytoville_native", .linkage = .static, .root_module = root });
-    lib.bundle_compiler_rt = true;
+    lib.bundle_compiler_rt = b.option(bool, "bundle-compiler-rt", "Include compiler runtime in the static archive") orelse true;
     b.installArtifact(lib);
     const tests = b.addTest(.{ .root_module = root });
     b.step("test", "Run boundary and real-kernel tests").dependOn(&b.addRunArtifact(tests).step);

@@ -1,91 +1,82 @@
 // SPDX-License-Identifier: CC-BY-SA-4.0
 // Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
 // SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell (catachresis-colloquium) <j.d.a.jewell@open.ac.uk>
-= Contributing — Cytoville
-:revdate: 2026-MM-DD
+= Contributing to Cytoville
+:revdate: 2026-11-07
 
-== Audience
+== Ways to help
 
-Developers working *on* `Cytoville`. For consumers (people calling
-or depending on it) see link:./usage.adoc[usage.adoc].
+You do not need specialist hardware to contribute. Useful work includes
+reproducible bug reports, accessibility and keyboard testing, translations,
+biological accuracy, art, audio, scenario balance and small reference kernels.
+Use https://github.com/catachresis-colloquium/cytoville/issues[project issues]
+to discuss a focused change before a large implementation.
 
-== Local-dev setup
+For future computing, read
+link:architecture/FUTURE-COMPUTING.adoc[the research and implementation boundaries].
+The disabled settings are an invitation to help build support. They are not a
+claim that the backends already exist or that buying a device will enable them.
+Ask vendors and research funders for documented interfaces, open drivers,
+accessible research hardware and reproducible performance and energy evidence.
+Speak in your own name; this project does not send advocacy messages for you.
 
-Prerequisites — the minimum versions and where to get them:
+AI can help explain papers, draft experiments, generate test cases and review
+code. Check original sources, run the experiment and report failures as well
+as successes. Include tool/model versions and how generated work was validated.
+A generated proof or performance claim is not evidence until independently checked.
 
-* `<tool 1>` v`<version>` — `<install instruction>`.
-* `<tool 2>` v`<version>` — `<install instruction>`.
-* GPG signing key configured (estate policy — all commits must be
-  signed). See
-  link:https://github.com/hyperpolymath/standards/blob/main/docs/secure-coding-training.md[standards/docs/secure-coding-training.md].
+== A useful performance report
 
-One-shot setup:
+Include the game version, operating system, renderer/backend, display resolution
+and scale, CPU/GPU, and a short reproduction. Separate startup, button response,
+frame pacing, game simulation and shutdown. Compare release builds on the same
+machine with the same workload. The opt-in `--profile FILE` records application
+CPU/update timings; it does not measure click-to-photon latency or prove GPU
+throughput. Remove usernames, paths, keys, resume tickets and private player data
+before sharing logs. Do not upload saves or diagnostic bundles without reviewing them.
+
+== Build and verify
+
+The supported development path and exact dependencies are in
+link:../README.adoc[README], link:../mise.toml[mise.toml] and the CI scripts.
+The current native path uses Rust, Bevy, Zig 0.16.0, Idris2 0.8.0,
+Elixir 1.19 and Erlang OTP 28. Linux/WSL also needs the graphics/audio development
+libraries listed in the README. Initialise the pinned submodule:
 
 [source,bash]
 ----
-git clone git@github.com:catachresis-colloquium/Cytoville.git
-cd Cytoville
-just setup       # installs deps, sets up hooks
-just test        # runs the full test suite
+git clone --recurse-submodules https://github.com/catachresis-colloquium/cytoville
+cd cytoville
+just build
+just run
+just test
+just quality
+just validate-rsr
+just assail
 ----
 
-== Running tests
+Normal play uses a release build. Proof tooling has separate installation
+requirements: `just verify-budget` covers the selected resource primitives,
+not the whole game. See link:verification/PROOF-STATUS.adoc[proof scope].
+A missing analysis tool is an unperformed check, not a clean scan.
 
-* **Unit**: `just test-unit` — fast, no I/O.
-* **Integration**: `just test-int` — uses real services (database,
-  HTTP, etc.). Estate policy: prefer real over mocked
-  (see `feedback_integration_tests_real_db` in maintainer's memory).
-* **Property**: `just test-prop` — randomised, slower; budget
-  documented in `docs/proof-debt.md` if applicable.
-* **Full**: `just test` — runs all of the above.
+== Code and review
 
-== Code style
+Read the repository deed and link:status/ROADMAP.adoc[roadmap]. Keep Rust game
+rules authoritative, Idris2 ABI declarations and Zig FFI aligned, and preserve
+the biological ontology used by UMS. Shared accelerator operations belong in
+Enaction; a Cytoville integration needs a real workload and verified contract.
+Do not add a device-name switch that claims support without an implementation.
 
-We enforce style via CI (governance-reusable.yml from hyperpolymath/standards).
-Locally:
+Keep changes focused, use signed commits and SPDX headers, preserve existing
+licences, and open a pull request. Games use AGPL-3.0-or-later and prose uses
+CC-BY-SA-4.0 under metadatastician's licence policy; inherited tooling retains
+its own licence. Follow the repository's protected checks and review policy;
+never bypass it to obtain a green merge. Enable auto-merge for ready PRs
+when available, retaining all required checks and reviews. Document the actual
+checks run and remaining limitations. Research and experimental code must retain those labels.
 
-[source,bash]
-----
-just fmt         # auto-format
-just lint        # static checks
-----
-
-* All commits must be **GPG-signed** (CI enforces; see
-  link:https://github.com/hyperpolymath/standards[standards]).
-* All source files must carry an **SPDX-License-Identifier** header
-  (CI enforces).
-* Conventional commits — `feat`, `fix`, `chore`, `refactor`, `docs`,
-  `test`, `ci`, `revert` (CHANGELOG is auto-generated from these
-  via link:https://github.com/hyperpolymath/standards/blob/main/.github/workflows/changelog-reusable.yml[`changelog-reusable.yml`]).
-
-== Branching & PR workflow
-
-. Branch off `main` as `claude/<topic>` (for AI agents) or
-  `<initials>/<topic>` (for humans).
-. Make focused, narrow commits — one logical change per commit.
-. Open a PR against `main`.
-. **Enable auto-merge immediately** on every PR you open
-  (`gh pr merge <num> --auto --squash`) — estate standing policy
-  (see standards#196 audit and policies).
-. CI must be green. The PR auto-merges when checks pass + reviews land.
-
-== Adding a new dependency
-
-. State the *why* in the PR body — what does this dependency unlock?
-. Check provenance (maintained, audited, no malicious history).
-. Pin to a SHA, not a tag.
-. Update `docs/architecture.adoc#Dependencies`.
-
-== Adding an ADR
-
-When you make a non-obvious design decision, write it down:
-
-. Copy `docs/decisions/0001-template.adoc` → `0002-<slug>.adoc`.
-. Fill in: Context, Decision, Consequences, Alternatives.
-. Link the ADR from the README or relevant code as a comment.
-
-== Reporting issues
-
-* Bugs in `Cytoville`: file at `catachresis-colloquium/Cytoville/issues`.
-* Estate-wide concerns (policy, conventions, CI): file at
-  `hyperpolymath/standards/issues`.
+New dependencies need a concrete purpose, provenance review and locked versions.
+Update the appropriate architecture document for a new runtime boundary.
+Report estate-wide standards questions to
+https://github.com/metadatastician/standards[metadatastician/standards].

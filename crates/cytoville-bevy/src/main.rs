@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 use bevy::picking::Pickable;
 use bevy::prelude::*;
+use bevy::ui::Pressed;
 use bevy::ui_widgets::{Activate, Button};
 use cytoville_bevy::network;
 use cytoville_core::{Command as GameCommand, Content, actions, rules, turn};
@@ -11,6 +12,7 @@ mod city;
 mod performance;
 mod portrait;
 mod soundtrack;
+mod technology;
 const BG: Color = Color::srgb(0.025, 0.055, 0.075);
 const PANEL: Color = Color::srgb(0.055, 0.11, 0.14);
 const INK: Color = Color::srgb(0.85, 0.94, 0.90);
@@ -48,6 +50,12 @@ struct Capture {
 }
 #[derive(Component, Clone)]
 enum Click {
+    Settings,
+    Technology(usize),
+    TechnologyContribute,
+    TechnologySource,
+    TechnologyProject,
+    UnavailableTechnology,
     Specimen(usize),
     Scenario(usize),
     Difficulty(usize),
@@ -175,67 +183,97 @@ fn main() {
         .and_then(|s| s.parse::<u64>().ok())
         .map(|n| Instant::now() + std::time::Duration::from_secs(n));
     let mut app = App::new();
-    app.add_plugins(DefaultPlugins.set(WindowPlugin {
+    let plugins = DefaultPlugins.set(WindowPlugin {
         primary_window: Some(Window {
             title: "CYTOVILLE · Biofilm Metropolis".into(),
             resolution: (1440, 960).into(),
+            desired_maximum_frame_latency: if args.contains(&"--low-latency-probe".into()) {
+                std::num::NonZero::new(1)
+            } else {
+                None
+            },
             ..default()
         }),
         ..default()
-    }))
-    .insert_resource(ClearColor(BG))
-    .init_resource::<portrait::Cache>()
-    .init_resource::<city::Artwork>()
-    .init_resource::<city::Motion>()
-    .insert_resource(Session {
-        runtime,
-        network,
-        menu,
-        dirty: true,
-        specimen: 0,
-        scenario: 0,
-        difficulty: 1,
-        seed,
-        page: 0,
-        message,
-        save: arg("--save")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| PathBuf::from("cytoville-save.json")),
-        clock: FixedStep::from_hz(30.0),
-        visual_phase: 0.0,
-        name_edit: None,
-        inspect: false,
-        smoke_until,
-    })
-    .add_systems(
-        Startup,
-        |mut commands: Commands, mut fonts: ResMut<Assets<Font>>| {
-            let font =
-                Font::from_bytes(include_bytes!("../../../assets/fonts/DejaVuSans.ttf").to_vec());
-            let _ = FONT.set(fonts.add(font));
-            commands.spawn(Camera2d);
-        },
-    )
-    .insert_resource(Capture {
-        path: arg("--screenshot").map(PathBuf::from),
-        frames: 0,
-    })
-    .add_observer(interact)
-    .add_systems(
-        Update,
-        (
-            keyboard,
-            network_updates,
-            render,
-            animate,
-            city::animate,
-            capture,
+    });
+    let plugins = if args.contains(&"--no-audio-probe".into()) {
+        plugins.disable::<bevy::audio::AudioPlugin>()
+    } else {
+        plugins
+    };
+    app.add_plugins(plugins)
+        .insert_resource(ClearColor(BG))
+        .init_resource::<portrait::Cache>()
+        .init_resource::<city::Artwork>()
+        .init_resource::<city::Motion>()
+        .insert_resource(technology::Settings {
+            open: args.contains(&"--technology-settings".into()),
+            ..default()
+        })
+        .insert_resource(Session {
+            runtime,
+            network,
+            menu,
+            dirty: true,
+            specimen: 0,
+            scenario: 0,
+            difficulty: 1,
+            seed,
+            page: 0,
+            message,
+            save: arg("--save")
+                .map(PathBuf::from)
+                .unwrap_or_else(|| PathBuf::from("cytoville-save.json")),
+            clock: FixedStep::from_hz(30.0),
+            visual_phase: 0.0,
+            name_edit: None,
+            inspect: false,
+            smoke_until,
+        })
+        .add_systems(
+            Startup,
+            |mut commands: Commands, mut fonts: ResMut<Assets<Font>>| {
+                let font = Font::from_bytes(
+                    include_bytes!("../../../assets/fonts/DejaVuSans.ttf").to_vec(),
+                );
+                let _ = FONT.set(fonts.add(font));
+                commands.spawn(Camera2d);
+            },
         )
-            .chain(),
-    );
-    soundtrack::install(&mut app);
+        .insert_resource(Capture {
+            path: arg("--screenshot").map(PathBuf::from),
+            frames: 0,
+        })
+        .add_observer(interact)
+        .add_systems(
+            Update,
+            (
+                keyboard,
+                network_updates,
+                render,
+                animate,
+                city::animate,
+                button_feedback,
+                capture,
+            )
+                .chain(),
+        );
+    if !args.contains(&"--no-audio-probe".into()) {
+        soundtrack::install(&mut app);
+    }
+    #[cfg(target_os = "windows")]
+    app.add_systems(Startup, |mut windows: Query<&mut Window>| {
+        // The 1440x960 logical default exceeds many high-DPI laptop desktops.
+        // Let the window manager fit the work area while retaining window controls.
+        for mut window in &mut windows {
+            window.set_maximized(true);
+        }
+    });
+    app.add_systems(Startup, performance::adapter);
     app.add_systems(First, performance::frame);
+    app.add_systems(Last, performance::exit_requested);
     app.run();
+    performance::finished();
     if let Some(path) = profile
         && let Err(error) = performance::write(&path)
     {
@@ -296,7 +334,12 @@ fn command(s: &mut Session, cmd: GameCommand) {
     };
     s.dirty = true;
 }
-fn interact(event: On<Activate>, mut s: ResMut<Session>, q: Query<(&Click, &Enabled)>) {
+fn interact(
+    event: On<Activate>,
+    mut s: ResMut<Session>,
+    mut settings: ResMut<technology::Settings>,
+    q: Query<(&Click, &Enabled)>,
+) {
     let Ok((click, enabled)) = q.get(event.entity) else {
         return;
     };
@@ -304,6 +347,22 @@ fn interact(event: On<Activate>, mut s: ResMut<Session>, q: Query<(&Click, &Enab
         return;
     }
     match click.clone() {
+        Click::Settings => settings.open = !settings.open,
+        Click::Technology(i) => {
+            settings.selected = i.min(technology::TECHNOLOGIES.len() - 1);
+            settings.contribute = false;
+            settings.notice.clear();
+        }
+        Click::TechnologyContribute => settings.contribute = !settings.contribute,
+        Click::TechnologySource | Click::TechnologyProject => {
+            if let Err(error) = technology::open_source(
+                settings.selected,
+                matches!(click, Click::TechnologyProject),
+            ) {
+                settings.notice = format!("Cannot open browser: {error}");
+            }
+        }
+        Click::UnavailableTechnology => return,
         Click::Specimen(i) => s.specimen = i,
         Click::Scenario(i) => s.scenario = i,
         Click::Difficulty(i) => s.difficulty = i,
@@ -386,8 +445,41 @@ fn interact(event: On<Activate>, mut s: ResMut<Session>, q: Query<(&Click, &Enab
 fn keyboard(
     keys: Res<ButtonInput<KeyCode>>,
     mut s: ResMut<Session>,
+    mut settings: ResMut<technology::Settings>,
     mut typed: MessageReader<bevy::input::keyboard::KeyboardInput>,
 ) {
+    if settings.open {
+        typed.clear();
+        if keys.just_pressed(KeyCode::Escape) {
+            settings.open = false;
+            s.dirty = true;
+        }
+        let count = technology::TECHNOLOGIES.len();
+        if keys.just_pressed(KeyCode::ArrowDown) || keys.just_pressed(KeyCode::ArrowUp) {
+            settings.selected = (settings.selected
+                + if keys.just_pressed(KeyCode::ArrowDown) {
+                    1
+                } else {
+                    count - 1
+                })
+                % count;
+            settings.contribute = false;
+            s.dirty = true;
+        }
+        if keys.just_pressed(KeyCode::Enter) {
+            settings.contribute = !settings.contribute;
+            s.dirty = true;
+        }
+        if settings.contribute
+            && (keys.just_pressed(KeyCode::KeyL) || keys.just_pressed(KeyCode::KeyC))
+            && let Err(error) =
+                technology::open_source(settings.selected, keys.just_pressed(KeyCode::KeyC))
+        {
+            settings.notice = format!("Cannot open browser: {error}");
+            s.dirty = true;
+        }
+        return;
+    }
     if let Some(mut name) = s.name_edit.take() {
         let previous_name = name.clone();
         for event in typed.read() {
@@ -472,6 +564,7 @@ fn render(
     mut images: ResMut<Assets<Image>>,
     mut portraits: ResMut<portrait::Cache>,
     mut artwork: ResMut<city::Artwork>,
+    settings: Res<technology::Settings>,
 ) {
     if !s.dirty {
         return;
@@ -480,6 +573,26 @@ fn render(
     s.dirty = false;
     for entity in &screens {
         commands.entity(entity).despawn();
+    }
+    if settings.open {
+        commands
+            .spawn((
+                Screen,
+                Node {
+                    width: Val::Percent(100.),
+                    height: Val::Percent(100.),
+                    padding: UiRect::all(Val::Px(24.)),
+                    ..column()
+                },
+                BackgroundColor(BG),
+            ))
+            .with_children(|root| {
+                technology::draw(root, &settings);
+                if !settings.notice.is_empty() {
+                    root.spawn(text(&settings.notice, 14., INK));
+                }
+            });
+        return;
     }
     let c = &s.runtime.content;
     let g = &s.runtime.game;
@@ -494,7 +607,8 @@ fn render(
     );
     let city_image = (!s.menu).then(|| artwork.get(c, &mut images));
     commands.spawn((Screen,Node{width:Val::Percent(100.0),height:Val::Percent(100.0),padding:UiRect::all(Val::Px(24.0)),..column()},BackgroundColor(BG))).with_children(|root|{
-        root.spawn(Node{align_items:AlignItems::Center,justify_content:JustifyContent::SpaceBetween,..default()}).with_children(|head|{head.spawn(text("CYTOVILLE",32.0,MINT));head.spawn(text("ONE CELL. ONE LIFETIME. A WHOLE CITY.",15.0,INK));if !s.menu{head.spawn(button(Click::Menu,true)).with_child(text("Menu",15.0,INK));head.spawn(button(Click::Save,s.network.is_none())).with_child(text("Save · F5",15.0,INK));}});
+        root.spawn(Node{align_items:AlignItems::Center,justify_content:JustifyContent::SpaceBetween,..default()}).with_children(|head|{head.spawn(text("CYTOVILLE",32.0,MINT));head.spawn(text("ONE CELL. ONE LIFETIME. A WHOLE CITY.",15.0,INK));head.spawn(button(Click::Settings,true)).with_child(text("Settings",15.0,MINT));if !s.menu{head.spawn(button(Click::Menu,true)).with_child(text("Menu",15.0,INK));head.spawn(button(Click::Save,s.network.is_none())).with_child(text("Save · F5",15.0,INK));}});
+
         if !s.message.is_empty(){root.spawn(text(s.message.clone(),15.0,Color::srgb(1.0,0.75,0.38)));}
         if let Some(name)=&s.name_edit{root.spawn(text(format!("Name: {name}_   Enter to save · Escape to cancel"),20.0,MINT));}
         if s.menu{
@@ -563,6 +677,20 @@ fn animate(
         exit.write(AppExit::Success);
     }
 }
+fn button_feedback(mut buttons: Query<(&Enabled, Has<Pressed>, &mut BorderColor), With<Button>>) {
+    for (enabled, pressed, mut border) in &mut buttons {
+        let color = BorderColor::all(if !enabled.0 {
+            PANEL
+        } else if pressed {
+            MINT
+        } else {
+            Color::srgb(0.21, 0.46, 0.42)
+        });
+        if *border != color {
+            *border = color;
+        }
+    }
+}
 fn capture(mut commands: Commands, mut c: ResMut<Capture>) {
     c.frames += 1;
     if c.frames == 10
@@ -578,6 +706,82 @@ fn capture(mut commands: Commands, mut c: ResMut<Capture>) {
 mod tests {
     use super::*;
     use std::sync::{Mutex, mpsc};
+
+    #[test]
+    fn research_settings_do_not_issue_game_commands_or_enable_backends() {
+        let mut app = App::new();
+        let runtime = Runtime::new(
+            Content::builtin(),
+            "euglena",
+            "fresh-daughter",
+            "standard",
+            7,
+            false,
+        )
+        .unwrap();
+        let before = serde_json::to_value(&runtime).unwrap();
+        app.insert_resource(Session {
+            runtime,
+            network: None,
+            menu: false,
+            dirty: false,
+            specimen: 0,
+            scenario: 0,
+            difficulty: 1,
+            seed: 7,
+            page: 0,
+            message: String::new(),
+            save: PathBuf::new(),
+            clock: FixedStep::from_hz(30.),
+            visual_phase: 0.,
+            smoke_until: None,
+            name_edit: None,
+            inspect: false,
+        })
+        .insert_resource(technology::Settings {
+            open: true,
+            ..default()
+        })
+        .init_resource::<ButtonInput<KeyCode>>()
+        .add_message::<bevy::input::keyboard::KeyboardInput>()
+        .add_systems(Update, keyboard)
+        .add_observer(interact);
+        let unavailable = app
+            .world_mut()
+            .spawn((Click::UnavailableTechnology, Enabled(false)))
+            .id();
+        app.world_mut().trigger(Activate {
+            entity: unavailable,
+        });
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::Space);
+        app.update();
+        assert_eq!(
+            serde_json::to_value(&app.world().resource::<Session>().runtime).unwrap(),
+            before
+        );
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .reset_all();
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::ArrowUp);
+        app.update();
+        assert_eq!(
+            app.world().resource::<technology::Settings>().selected,
+            technology::TECHNOLOGIES.len() - 1
+        );
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .reset_all();
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::Escape);
+        app.update();
+        assert!(!app.world().resource::<technology::Settings>().open);
+        assert!(!app.world().resource::<Session>().menu);
+    }
 
     #[test]
     fn idle_rename_does_not_rebuild_the_screen_and_escape_closes_it() {
@@ -609,6 +813,7 @@ mod tests {
             inspect: false,
         });
         app.init_resource::<ButtonInput<KeyCode>>()
+            .init_resource::<technology::Settings>()
             .add_message::<bevy::input::keyboard::KeyboardInput>()
             .add_systems(Update, keyboard);
         for _ in 0..120 {

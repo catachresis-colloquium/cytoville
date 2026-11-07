@@ -616,7 +616,8 @@
         :total-components 0
         :visited-components 0
         :coverage-percent 0)
-      (session :date "2026-11-07" :scope "Bevy presentation and resource-proof CI" :evidence "Hosted 0.14 proof run 42365155854; local graphical TLS journey; portrait cache regression; bounded CPU timing samples"))
+      (session :date "2026-11-07" :scope "Bevy presentation and resource-proof CI" :evidence "Hosted 0.14 proof run 42365155854; local graphical TLS journey; portrait cache regression; bounded CPU timing samples")
+      (session :date "2026-11-07" :scope "Future computing catalogue and responsiveness diagnostics" :evidence "Native settings rendering; modal-input regression; architecture/FUTURE-COMPUTING.adoc; verification/PERFORMANCE.adoc. No specialist hardware implementation claimed."))
     ; debt — Meander debt list
     ; Things found but not fixed. Carried between sessions.
     ; Becomes the next session's Phase 0 input.
@@ -626,7 +627,8 @@
       (metadata
         :version "1.0.0"
         :last-updated "2026-11-07")
-      (entry :date "2026-11-07" :scope "Presentation and governance" :remaining "Hardware release/input latency certification, wider art/accessibility acceptance, repeated external removal of required-check ruleset; see ROADMAP and PERFORMANCE"))
+      (entry :date "2026-11-07" :scope "Presentation and governance" :remaining "Hardware release/input latency certification, wider art/accessibility acceptance, repeated external removal of required-check ruleset; see ROADMAP and PERFORMANCE")
+      (entry :date "2026-11-07" :scope "Specialist computing and perceived latency" :remaining "Presentation latency trace requires Windows privileges; input/startup/shutdown root cause unresolved. Device probes, accelerated workloads, GSA adapter and both adiabatic backends remain unimplemented."))
     ; rra — directives for Robot Repo Automaton (RRA) enforcing the Platonic Ideal root.
     (rra
       :target "robot-repo-automaton"

@@ -143,5 +143,14 @@ click 1100 274 # Resolve the resumed Euglena encounter.
 wait_for 'resumed graphical client can still command the host' jq -e \
   ".data.runtime.game.revision > $revision" "$checkpoint"
 stop_game
-printf '%s\n' 'PASS: real Bevy input, offline save/reload, native rival, loopback TLS command and resume.' \
+launch --play --technology-settings --save "$scratch/technology.json"
+key space # Settings must not advance the authoritative game.
+key Up # Wrap from CPU to reversible computing.
+key Return # Open the contribution explanation without opening an external URL.
+shot 09-future-computing
+key Escape
+key F5
+wait_for 'settings keyboard input preserves the game turn' jq -e '.game.turn == 1' "$scratch/technology.json"
+stop_game
+printf '%s\n' 'PASS: real Bevy input, offline save/reload, native rival, loopback TLS command and resume; research settings preserve the game turn.' \
   'Scope: 1440x960 X11; not a frame-rate, art-quality or accessibility certification.' | tee "$out/receipt.txt"
