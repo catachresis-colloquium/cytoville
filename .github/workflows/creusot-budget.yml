@@ -12,11 +12,22 @@ concurrency:
   cancel-in-progress: true
 jobs:
   budget:
-    uses: hyperpolymath/cicd-suite/.github/workflows/creusot-gate.yml@faba7124aee223098d33497bdadc96e111829752
+    uses: hyperpolymath/cicd-suite/.github/workflows/creusot-gate.yml@1084f47cc64090a7acc5f719a65fec48c1705e06
     with:
       working_directory: crates/cytoville-budget
       creusot_version: "0.14.0"
       rust_nightly: "nightly-2026-08-03"
       enforce_hollow: true
+  acceptance:
+    name: Production resource proof acceptance
+    needs: budget
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    steps:
+      - name: Require successful shared proof verdict
+        env:
+          PROOF_RESULT: ${{ needs.budget.result }}
+        run: test "$PROOF_RESULT" = success
 # Provisioning deviation: the shared gate installs the pinned upstream proof
 # tools outside Guix. Scope and closure are recorded in PROOF-STATUS.adoc.

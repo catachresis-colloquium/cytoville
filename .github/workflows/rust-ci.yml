@@ -60,3 +60,17 @@ jobs:
           if [ -f Cargo.toml ]; then
             bash scripts/cytoville-check.sh
           fi
+
+      - name: Graphical acceptance with local encrypted multiplayer
+        env:
+          CYTOVILLE_ACCEPTANCE_OUTPUT: ${{ runner.temp }}/cytoville-graphical-acceptance
+        run: xvfb-run -a -s "-screen 0 1440x960x24 -nolisten tcp" bash scripts/cytoville-graphical-acceptance.sh
+
+      - name: Retain graphical acceptance screenshots and receipt
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: cytoville-graphical-acceptance
+          path: ${{ runner.temp }}/cytoville-graphical-acceptance
+          retention-days: 7
+          if-no-files-found: warn

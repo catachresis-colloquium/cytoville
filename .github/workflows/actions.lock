@@ -9,7 +9,7 @@ workflows:
         - 'actions/checkout@v7.0.1'
         - 'github/codeql-action@9b3254085494b55a0f7c4c2b3d2d52cc712ce370'
     '.github/workflows/creusot-budget.yml':
-        - 'hyperpolymath/cicd-suite@faba7124aee223098d33497bdadc96e111829752'
+        - 'hyperpolymath/cicd-suite@1084f47cc64090a7acc5f719a65fec48c1705e06'
     '.github/workflows/dependabot-automerge.yml':
         - 'dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98'
     '.github/workflows/docker-build.yml':
@@ -88,6 +88,7 @@ workflows:
         - 'actions/checkout@v7.0.1'
     '.github/workflows/rust-ci.yml':
         - 'actions/checkout@v7.0.1'
+        - 'actions/upload-artifact@v7.0.2'
         - 'erlef/setup-beam@v1.24.1'
     '.github/workflows/scorecard.yml':
         - 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
@@ -215,9 +216,9 @@ dependencies:
         commit: 'sha1-0f8e8c99d88aeb3fbfd523f1ef2c6f762d10d64d'
         owner_id: 75048950
         repo_id: 623796603
-    'hyperpolymath/cicd-suite@faba7124aee223098d33497bdadc96e111829752':
-        ref: 'main'
-        commit: 'sha1-faba7124aee223098d33497bdadc96e111829752'
+    'hyperpolymath/cicd-suite@1084f47cc64090a7acc5f719a65fec48c1705e06':
+        ref: 'fix/creusot-single-file-compatible'
+        commit: 'sha1-1084f47cc64090a7acc5f719a65fec48c1705e06'
         owner_id: 6759885
         repo_id: 1326697643
         uses:
