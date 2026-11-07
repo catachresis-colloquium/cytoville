@@ -5,16 +5,26 @@ defmodule Cytoville.CheckpointTest do
 
   setup do
     previous = Application.fetch_env!(:cytoville_server, :checkpoint_dir)
-    directory = Path.join(System.tmp_dir!(), "cytoville-checkpoint-test-#{System.unique_integer([:positive])}")
+
+    directory =
+      Path.join(
+        System.tmp_dir!(),
+        "cytoville-checkpoint-test-#{System.unique_integer([:positive])}"
+      )
+
     Application.put_env(:cytoville_server, :checkpoint_dir, directory)
+
     on_exit(fn ->
       Application.put_env(:cytoville_server, :checkpoint_dir, previous)
       File.rm_rf!(directory)
     end)
+
     {:ok, directory: directory}
   end
 
-  test "startup never changes an existing operator directory's permissions", %{directory: directory} do
+  test "startup never changes an existing operator directory's permissions", %{
+    directory: directory
+  } do
     File.mkdir_p!(directory)
     File.chmod!(directory, 0o755)
     assert_raise RuntimeError, fn -> Cytoville.Checkpoint.initialize!() end

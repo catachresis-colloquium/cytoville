@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 defmodule Cytoville.Checkpoint do
   import Bitwise, only: [band: 2]
+
   @moduledoc "Private, atomic session checkpoints, including native memory and resume credentials."
 
   defp root, do: Application.fetch_env!(:cytoville_server, :checkpoint_dir)
@@ -20,7 +21,10 @@ defmodule Cytoville.Checkpoint do
           raise "Checkpoint directory must already be a private directory (0700)"
         end
 
-        unless Enum.all?(File.ls!(directory), &Regex.match?(~r/\A[0-9a-f]{64}\.json(?:\.tmp)?\z/, &1)) do
+        unless Enum.all?(
+                 File.ls!(directory),
+                 &Regex.match?(~r/\A[0-9a-f]{64}\.json(?:\.tmp)?\z/, &1)
+               ) do
           raise "Checkpoint directory must be dedicated to Cytoville session records"
         end
 

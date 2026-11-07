@@ -193,6 +193,7 @@ defmodule Cytoville.Session do
   # mutable state and the content fingerprint supplied by the Rust worker.
   defp client_data(data),
     do: Map.update!(data, "runtime", &Map.delete(&1, "content"))
+
   defp recoverable?(record, {:resume, key}), do: key in Map.values(record["tokens"])
 
   defp recoverable?(record, {:join, key}),
