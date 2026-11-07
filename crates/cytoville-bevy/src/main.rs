@@ -236,8 +236,11 @@ fn main() {
     soundtrack::install(&mut app);
     app.add_systems(First, performance::frame);
     app.run();
-    if let Some(path) = profile {
-        performance::write(&path).expect("write performance receipt");
+    if let Some(path) = profile
+        && let Err(error) = performance::write(&path)
+    {
+        eprintln!("Cannot write performance receipt: {error}");
+        std::process::exit(1);
     }
 }
 fn save_ticket(path: &str, ticket: &serde_json::Value) -> std::io::Result<()> {

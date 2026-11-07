@@ -53,6 +53,18 @@ shot() {
     import -window "$window" "$out/$1.png"
   fi
 }
+game_is_visible() {
+  # Wait for an actual rendered gameplay frame, not just a queued Begin input.
+  # This point is inside the offline Save button; the menu has only background
+  # here. The fixed 1440x960 journey already depends on these control positions.
+  local visible
+  if [[ -n "${CYTOVILLE_XWD_FRAMEBUFFER:-}" ]]; then
+    visible=$(magick-im7.q16 "xwd:$CYTOVILLE_XWD_FRAMEBUFFER" -format '%[fx:p{1330,32}.g>0.15]' info:)
+  else
+    visible=$(import -window "$window" -format '%[fx:p{1330,32}.g>0.15]' info:)
+  fi
+  [[ "$visible" == 1 ]]
+}
 save="$scratch/offline.json"
 state() { jq -e "$1" "$save"; }
 launch --save "$save"
@@ -60,6 +72,7 @@ shot 01-menu
 click 448 183 # Amoeba
 click 63 490 # Gentle
 click 95 551 # Begin
+wait_for 'first gameplay frame rendered' game_is_visible
 shot 02-begin
 click 866 290 # Pattern
 wait_for 'selected specimen, difficulty and customisation' state '.game.actors[0].specimen == "amoeba" and .game.actors[0].atp == 102 and .game.looks[0].pattern == "spots"'
@@ -107,7 +120,12 @@ export CYTOVILLE_CHECKPOINT_DIR="$scratch/checkpoints"
 export CYTOVILLE_TLS_CERT="$scratch/cert.pem" CYTOVILLE_TLS_KEY="$scratch/key.pem" CYTOVILLE_CA_CERT="$scratch/cert.pem"
 (cd server && exec mix run --no-halt) > "$scratch/server.log" 2>&1 &
 server_pid=$!
-wait_for 'Elixir TLS listener' test -s "$scratch/port"
+if ! wait_for 'Elixir TLS listener' test -s "$scratch/port"; then
+  # No client has connected yet: surface startup diagnostics, not private
+  # tickets/checkpoints, before the cleanup trap removes the scratch directory.
+  tail -60 "$scratch/server.log" >&2
+  exit 1
+fi
 launch --server "tls://localhost:$(cat "$scratch/port")" --host --native-rival \
   --session graphical-acceptance --connection-file "$scratch/ticket.json"
 checkpoint="$scratch/checkpoints/$(printf graphical-acceptance | sha256sum | cut -d' ' -f1).json"

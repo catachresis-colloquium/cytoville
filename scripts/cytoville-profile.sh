@@ -22,7 +22,7 @@ cleanup() {
 }
 trap cleanup EXIT
 unset WAYLAND_DISPLAY
-"$binary" --play --seed 7 --save "$scratch/offline.json" --smoke-seconds 35 --profile "$out/timings.json" > "$out/renderer.log" 2>&1 &
+"$binary" --play --seed 7 --save "$scratch/offline.json" --smoke-seconds 60 --profile "$out/timings.json" > "$out/renderer.log" 2>&1 &
 game_pid=$!
 window=''
 for _ in $(seq 1 150); do

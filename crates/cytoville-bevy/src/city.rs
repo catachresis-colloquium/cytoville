@@ -33,6 +33,10 @@ pub fn position(id: &str, content: &Content) -> Vec2 {
 }
 
 pub fn destination(id: &str, content: &Content) -> Vec2 {
+    // Keep the central cell illustration clear of the registry's two-line card.
+    if id == "home" {
+        return Vec2::new(44., 34.5);
+    }
     position(id, content) + Vec2::new(11.5, -5.5)
 }
 
