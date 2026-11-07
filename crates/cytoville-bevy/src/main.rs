@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 use bevy::prelude::*;
 use bevy::ui_widgets::{Activate, Button};
+use cytoville_bevy::network;
 use cytoville_core::{Command as GameCommand, Content, actions, rules, turn};
 use cytoville_runtime::Runtime;
 use enaction_time::FixedStep;
 use std::{path::PathBuf, time::Instant};
-mod network;
 mod portrait;
 mod soundtrack;
 const BG: Color = Color::srgb(0.025, 0.055, 0.075);
@@ -128,7 +128,7 @@ fn main() {
         let address = arg("--server").unwrap_or("127.0.0.1:4280".into());
         let session = arg("--session").unwrap_or("cytoville".into());
         let request = if args.contains(&"--host".into()) {
-            serde_json::json!({"op":"create","session":session,"specimen":arg("--specimen").unwrap_or("euglena".into()),"scenario":arg("--scenario").unwrap_or("fresh-daughter".into()),"difficulty":"standard","seed":seed})
+            serde_json::json!({"op":"create","session":session,"specimen":arg("--specimen").unwrap_or("euglena".into()),"scenario":arg("--scenario").unwrap_or("fresh-daughter".into()),"difficulty":"standard","seed":seed,"multiplayer":!args.contains(&"--native-rival".into())})
         } else {
             serde_json::json!({"op":if args.contains(&"--resume".into()){"resume"}else{"join"},"session":session,"key":arg("--key").unwrap_or_default()})
         };
@@ -144,14 +144,13 @@ fn main() {
             (address, request)
         };
         match network::Network::start(address, request) {
-            Ok((net, game, content)) => {
+            Ok((net, remote)) => {
                 message = if net.invitation.is_empty() {
                     format!("Connected as cell {}", net.seat + 1)
                 } else {
                     format!("Invitation key: {}", net.invitation)
                 };
-                runtime.game = game;
-                runtime.content = content;
+                runtime = remote;
                 let path = arg("--connection-file").unwrap_or("cytoville-connection.json".into());
                 if let Err(e) = save_ticket(&path, &net.resume) {
                     message.push_str(&format!(" · Cannot save resume ticket: {e}"));
@@ -420,9 +419,9 @@ fn network_updates(mut s: ResMut<Session>) {
     };
     for update in updates {
         match update {
-            Ok(game) => {
-                if game != s.runtime.game {
-                    s.runtime.game = game;
+            Ok(runtime) => {
+                if runtime.game != s.runtime.game {
+                    s.runtime = runtime;
                     s.dirty = true;
                 }
             }

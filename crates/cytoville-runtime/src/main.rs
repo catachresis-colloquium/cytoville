@@ -80,7 +80,7 @@ fn respond(
     }
     let rt = runtime.as_ref().ok_or("No game")?;
     Ok(
-        json!({"game":rt.game,"content":rt.content,"actions":actions::list(&rt.content,&rt.game,rt.game.active,&rt.game.actors[rt.game.active].location),"nativeDecisions":rt.ai_tick}),
+        json!({"game":rt.game,"content":rt.content,"runtime":rt,"actions":actions::list(&rt.content,&rt.game,rt.game.active,&rt.game.actors[rt.game.active].location),"nativeDecisions":rt.ai_tick}),
     )
 }
 fn main() {

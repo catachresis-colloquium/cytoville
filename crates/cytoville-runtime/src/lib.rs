@@ -38,6 +38,16 @@ impl Runtime {
     pub fn dispatch(&mut self, seat: usize, command: &Command) -> Result<(), String> {
         let mut next = self.clone();
         next.game = apply(&next.content, &next.game, seat, command)?;
+        // Record accepted human commands too: multiplayer has no native rival
+        // to produce the causal trace on its behalf.
+        let cause = next.trace.events.last().map(|e| e.id).into_iter().collect();
+        next.record(
+            Domain::BehaviouralSelection,
+            &serde_json::to_string(command).map_err(|e| e.to_string())?,
+            seat as i32,
+            cause,
+        );
+        next.trace.tropes.last_mut().unwrap().bearer = format!("cell-{seat}");
         if !next.game.multiplayer && next.game.active == 1 && next.game.status == "playing" {
             next.run_rival()?;
         }
@@ -66,7 +76,7 @@ impl Runtime {
         });
         self.trace.events.push(TraceEvent {
             id,
-            tick: self.ai_tick,
+            tick: self.game.revision,
             trope: TropeId(id),
             value_milli: value,
             confidence: None,
@@ -106,7 +116,7 @@ impl Runtime {
                 Domain::Affective,
                 "oxidative-distress",
                 (self.game.actors[1].stress * 10.0) as i32,
-                vec![],
+                self.trace.events.last().map(|e| e.id).into_iter().collect(),
             );
             let motive = self.record(
                 Domain::Conative,

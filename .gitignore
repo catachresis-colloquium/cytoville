@@ -151,6 +151,7 @@ verification/proofs/agda/*.agdai
 /cytoville-connection.json
 /server/_build/
 /server/deps/
+/server/data/
 /src/interface/build/
 /verification/creusot/target/
 /verif/

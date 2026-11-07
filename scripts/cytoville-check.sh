@@ -16,3 +16,4 @@ cargo check -p cytoville-bevy --locked
 cargo build -p cytoville-runtime --locked
 worker="$(cargo metadata --format-version 1 --no-deps | jq -r .target_directory)/debug/cytoville-server"
 (cd server && mix format --check-formatted && CYTOVILLE_WORKER="$worker" mix test)
+bash scripts/cytoville-e2e.sh

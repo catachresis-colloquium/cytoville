@@ -22,6 +22,54 @@ defmodule Cytoville.MultiplayerTest do
     :json.decode(line)
   end
 
+  test "native rival memory and causal trace survive session loss" do
+    host = socket()
+    id = "native-#{System.unique_integer([:positive])}"
+
+    created =
+      request(host, %{
+        "op" => "create",
+        "session" => id,
+        "specimen" => "euglena",
+        "scenario" => "fresh-daughter",
+        "difficulty" => "standard",
+        "seed" => 7,
+        "multiplayer" => false
+      })
+
+    assert created["ok"]
+
+    next =
+      request(host, %{
+        "op" => "command",
+        "expected_revision" => 0,
+        "command" => %{"type" => "end_turn"}
+      })
+
+    assert next["ok"]
+    assert next["data"]["nativeDecisions"] > 0
+    refute Enum.empty?(next["data"]["runtime"]["trace"]["events"])
+    :ok = Application.stop(:cytoville_server)
+    {:ok, _} = Application.ensure_all_started(:cytoville_server)
+
+    resumed = socket()
+
+    restored =
+      request(resumed, %{"op" => "resume", "session" => id, "key" => created["data"]["resumeKey"]})
+
+    assert restored["ok"]
+    assert restored["data"]["data"]["runtime"] == next["data"]["runtime"]
+    rejected = socket()
+
+    refute request(rejected, %{
+             "op" => "join",
+             "session" => id,
+             "key" => created["data"]["inviteKey"]
+           })["ok"]
+
+    Enum.each([host, resumed, rejected], &:gen_tcp.close/1)
+  end
+
   test "two real clients share Rust truth, enforce seats, reject replay, and reconnect" do
     host = socket()
     id = "test-#{System.unique_integer([:positive])}"
@@ -73,6 +121,22 @@ defmodule Cytoville.MultiplayerTest do
     assert next["ok"]
     assert next["data"]["game"]["turn"] == 2
     assert request(host, %{"op" => "state"})["data"]["game"] == next["data"]["game"]
+    {:ok, pid} = Cytoville.Session.lookup(id)
+    monitor = Process.monitor(pid)
+    Process.exit(pid, :kill)
+    assert_receive {:DOWN, ^monitor, :process, ^pid, :killed}
+    recovered = socket()
+
+    recovery =
+      request(recovered, %{
+        "op" => "resume",
+        "session" => id,
+        "key" => joined["data"]["resumeKey"]
+      })
+
+    assert recovery["ok"]
+    assert recovery["data"]["data"]["runtime"] == next["data"]["runtime"]
+    :gen_tcp.close(recovered)
     :gen_tcp.close(host)
     :gen_tcp.close(resumed)
   end

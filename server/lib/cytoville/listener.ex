@@ -17,6 +17,10 @@ defmodule Cytoville.Listener do
 
     {:ok, socket} = :gen_tcp.listen(Application.fetch_env!(:cytoville_server, :port), opts)
     {:ok, {_ip, port}} = :inet.sockname(socket)
+
+    if path = System.get_env("CYTOVILLE_READY_FILE"),
+      do: File.write!(path, Integer.to_string(port))
+
     Task.start_link(fn -> accept(socket) end)
     {:ok, %{socket: socket, port: port}}
   end
@@ -74,8 +78,9 @@ defmodule Cytoville.Listener do
 
   defp route(%{"op" => "create", "session" => id} = request, nil) when is_binary(id) do
     if Regex.match?(~r/\A[a-zA-Z0-9_-]{1,48}\z/, id) and
+         not match?({:ok, _}, Cytoville.Checkpoint.load(id)) and
          DynamicSupervisor.count_children(Cytoville.Sessions).active < 64 do
-      config = Map.take(request, ["specimen", "scenario", "difficulty", "seed"])
+      config = Map.take(request, ["specimen", "scenario", "difficulty", "seed", "multiplayer"])
 
       case DynamicSupervisor.start_child(Cytoville.Sessions, {Cytoville.Session, {id, config}}) do
         {:ok, pid} -> authenticate(Cytoville.Session.call(pid, :created), pid)

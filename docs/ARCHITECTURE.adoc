@@ -1,79 +1,35 @@
+= Cytoville architecture
 // SPDX-License-Identifier: CC-BY-SA-4.0
-// Copyright (c) Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>
-// SPDX-FileCopyrightText: 2026 Jonathan D.A. Jewell (catachresis-colloquium) <j.d.a.jewell@open.ac.uk>
-= Architecture — Cytoville
-:revdate: 2026-MM-DD
 
-== System overview
+The Rust runtime owns game rules, deterministic random state, native rival memory
+and Enaction causal traces. Bevy renders that runtime locally or receives validated
+runtime snapshots from the Elixir service. Both paths use the same rules.
 
-One paragraph: what this project does and what it does not do. State the
-*invariant* — the property that, if violated, would make the whole project
-pointless. Future maintainers will read this paragraph first.
+== Execution paths
 
-== Component diagram
+* UMS generates and validates the city/cell profile, then compiles a content package.
+  The Rust worker validates that package before accepting a session.
+* Elixir authenticates invitations and resume keys, serializes commands per session,
+  and sends the authenticated seat and expected revision to its Rust Port worker.
+* Rust rejects illegal or stale commands atomically. Accepted commands enter the
+  Enaction trace; in native-rival mode the Zig Evil Weevil kernel selects intents
+  through the Idris2-defined ABI, and Rust applies legal actions.
+* The complete runtime returns through Elixir to Bevy. Initial connections, polling
+  and reconnects all validate the game, content and causal trace.
+* Elixir checkpoints acknowledged transitions, credentials and runtime to a private
+  directory. Resume lazily restores a lost session through Rust's validated load.
 
-Replace this section with an ASCII or Mermaid diagram. Keep it under 20
-lines — anything bigger belongs in `architecture/`.
+== Invariants and evidence
 
-[source]
-----
-+------------------+      +------------------+
-|   Component A    | ---> |   Component B    |
-+------------------+      +------------------+
-         |
-         v
-+------------------+
-|   Component C    |
-+------------------+
-----
+Seats belong to server-issued credentials. Revision checks prevent replay.
+A failed command cannot partially change the Rust runtime. UMS content is fixed
+for a connected session. Native memory and trace survive checkpoint recovery.
 
-== Data flow
+`scripts/cytoville-check.sh` runs ABI checks, rule tests, real Elixir TCP tests and
+`scripts/cytoville-e2e.sh`. The latter edits and compiles a UMS package, starts an
+Elixir host, then connects using the same transport used by the Bevy application.
+It checks two-human play, reconnect and server-hosted Evil Weevil execution.
+It does not certify graphical interaction or an internet deployment.
 
-For each external input, describe:
-
-* **Source**: where it comes from.
-* **Validation**: what guarantees we enforce on entry.
-* **Transformation**: high-level processing stages.
-* **Sink**: where the result goes.
-
-== Key invariants
-
-Enumerate the load-bearing invariants of the system. Each should have:
-
-. A one-line statement.
-. The code location(s) that enforce it.
-. The failure mode if the invariant is violated.
-
-Example:
-
-[cols="1,2,2,2", options="header"]
-|===
-| # | Invariant | Enforced at | Failure mode
-
-| 1
-| All HTTP requests carry a valid `X-Request-ID`.
-| `src/request_id.rs`
-| Logs become unjoinable; correlation breaks.
-
-| 2
-| The output buffer is always flushed before exit.
-| `src/main.rs:88-92` (Drop impl)
-| Last ~16KB of log lost on crash.
-|===
-
-== Dependencies
-
-* **Internal**: list other hyperpolymath repos this depends on.
-* **External**: SHA-pinned (see `Cargo.lock` / `.lock` / etc.).
-* **Build-time**: tools required to build (just, , cargo, …).
-
-== Out of scope
-
-Explicit non-goals. Things we deliberately do *not* do, with a one-line
-reason for each. This section saves more time than the rest combined.
-
-== See also
-
-* link:./usage.adoc[Usage] — consumer perspective.
-* link:./contributing.adoc[Contributing] — developer setup.
-* link:./decisions/[ADRs] — historical record of why this shape.
+Dependencies are pinned in Cargo.lock, Cargo.toml and the Evil Weevil gitlink.
+See link:architecture/MULTIPLAYER.adoc[Multiplayer] for operation and limits.

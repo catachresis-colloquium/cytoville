@@ -3,19 +3,34 @@ defmodule Cytoville.Session do
   use GenServer, restart: :temporary
 
   def start_link({id, config}),
-    do: GenServer.start_link(__MODULE__, config, name: {:via, Registry, {Cytoville.Registry, id}})
+    do:
+      GenServer.start_link(__MODULE__, {id, config},
+        name: {:via, Registry, {Cytoville.Registry, id}}
+      )
 
   def call(pid, message), do: GenServer.call(pid, message, 15_000)
 
   def lookup(id) do
     case Registry.lookup(Cytoville.Registry, id) do
-      [{pid, _}] -> {:ok, pid}
-      _ -> {:error, "Unknown session"}
+      [{pid, _}] ->
+        {:ok, pid}
+
+      _ ->
+        with {:ok, record} <- Cytoville.Checkpoint.load(id) do
+          case DynamicSupervisor.start_child(
+                 Cytoville.Sessions,
+                 {__MODULE__, {id, {:restore, record}}}
+               ) do
+            {:ok, pid} -> {:ok, pid}
+            {:error, {:already_started, pid}} -> {:ok, pid}
+            _ -> {:error, "Session recovery failed"}
+          end
+        end
     end
   end
 
   @impl true
-  def init(config) do
+  def init({id, config}) do
     path = Application.fetch_env!(:cytoville_server, :worker)
     if not File.regular?(path), do: raise("Build cytoville-server and set CYTOVILLE_WORKER")
 
@@ -27,21 +42,43 @@ defmodule Cytoville.Session do
         args: []
       ])
 
-    request = Map.merge(config, %{"op" => "new", "multiplayer" => true})
+    request =
+      case config do
+        {:restore, record} -> %{"op" => "load", "save" => record["data"]["runtime"]}
+        config -> config |> Map.put("op", "new") |> Map.put_new("multiplayer", true)
+      end
 
     case worker(port, request) do
       {:ok, data} ->
-        timer = Process.send_after(self(), :expire, ttl())
+        lease = make_ref()
+        timer = Process.send_after(self(), {:expire, lease}, ttl())
 
-        {:ok,
-         %{
-           port: port,
-           data: data,
-           invite: token(),
-           tokens: %{0 => token()},
-           joined: false,
-           timer: timer
-         }}
+        fresh = %{
+          id: id,
+          lease: lease,
+          port: port,
+          data: data,
+          invite: token(),
+          tokens: %{0 => token()},
+          joined: false,
+          timer: timer
+        }
+
+        state =
+          case config do
+            {:restore, record} ->
+              %{
+                fresh
+                | invite: record["invite"],
+                  tokens: Map.new(record["tokens"], fn {k, v} -> {String.to_integer(k), v} end),
+                  joined: record["joined"]
+              }
+
+            _ ->
+              fresh
+          end
+
+        {:ok, Cytoville.Checkpoint.save(state)}
 
       {:error, reason} ->
         {:stop, reason}
@@ -55,14 +92,14 @@ defmodule Cytoville.Session do
       %{
         "seat" => 0,
         "resumeKey" => state.tokens[0],
-        "inviteKey" => state.invite,
+        "inviteKey" => if(state.data["game"]["multiplayer"], do: state.invite, else: nil),
         "data" => state.data
       }}, state}
   end
 
   def handle_call({:join, invite}, _from, state) do
     cond do
-      state.joined ->
+      state.joined or not state.data["game"]["multiplayer"] ->
         {:reply, {:error, "Both seats are occupied; use your resume key"}, state}
 
       invite != state.invite ->
@@ -97,7 +134,7 @@ defmodule Cytoville.Session do
         {:reply, {:error, "Unauthorized"}, state}
 
       {seat, _} ->
-        if not state.joined do
+        if not state.joined and state.data["game"]["multiplayer"] do
           {:reply, {:error, "Wait for the second cell to join"}, state}
         else
           # The connection cannot supply its seat. Rust checks the active seat,
@@ -118,7 +155,12 @@ defmodule Cytoville.Session do
   end
 
   @impl true
-  def handle_info(:expire, state), do: {:stop, :normal, state}
+  def handle_info({:expire, lease}, %{lease: lease} = state) do
+    Cytoville.Checkpoint.delete(state.id)
+    {:stop, :normal, state}
+  end
+
+  def handle_info({:expire, _old_lease}, state), do: {:noreply, state}
 
   def handle_info({port, {:exit_status, status}}, %{port: port} = state),
     do: {:stop, {:worker_exit, status}, state}
@@ -135,7 +177,13 @@ defmodule Cytoville.Session do
 
   defp touch(state) do
     Process.cancel_timer(state.timer)
-    %{state | timer: Process.send_after(self(), :expire, ttl())}
+    lease = make_ref()
+
+    Cytoville.Checkpoint.save(%{
+      state
+      | lease: lease,
+        timer: Process.send_after(self(), {:expire, lease}, ttl())
+    })
   end
 
   defp worker(port, request) do
