@@ -307,8 +307,47 @@ impl Artwork {
 pub struct CellMarker(pub usize);
 #[derive(Component)]
 pub struct Bubble(pub f32);
+#[derive(Component)]
+pub struct Landmark;
+
+#[derive(Clone, Copy)]
+struct Journey {
+    current: Vec2,
+    from: Vec2,
+    to: Vec2,
+    elapsed: f32,
+    duration: f32,
+}
+
+impl Journey {
+    fn new(at: Vec2) -> Self {
+        Self {
+            current: at,
+            from: at,
+            to: at,
+            elapsed: 1.,
+            duration: 1.,
+        }
+    }
+
+    fn advance(&mut self, target: Vec2, delta: f32) -> Vec2 {
+        if self.to != target {
+            self.from = self.current;
+            self.to = target;
+            self.elapsed = 0.;
+            self.duration = (self.from.distance(target) / 45.).clamp(0.65, 1.5);
+        }
+        // Presentation only. A stalled frame must not skip the whole journey;
+        // authoritative travel and its ATP charge remain instantaneous.
+        self.elapsed = (self.elapsed + delta.clamp(0., 0.1)).min(self.duration);
+        let t = self.elapsed / self.duration;
+        self.current = self.from.lerp(self.to, t * t * (3. - 2. * t));
+        self.current
+    }
+}
+
 #[derive(Resource, Default)]
-pub struct Motion(pub [Option<Vec2>; 2]);
+pub struct Motion([Option<Journey>; 2]);
 
 pub fn animate(
     time: Res<Time>,
@@ -321,13 +360,13 @@ pub fn animate(
         return;
     }
     for (marker, mut transform) in &mut markers {
-        let mut target = position(
+        let mut target = destination(
             &s.runtime.game.actors[marker.0].location,
             &s.runtime.content,
-        ) + Vec2::new(if marker.0 == 0 { -3.0 } else { 26.0 }, 3.5);
+        ) + Vec2::new(if marker.0 == 0 { -3.0 } else { 3.0 }, 0.);
         target.x = target.x.clamp(1.0, 99.0);
-        let current = motion.0[marker.0].get_or_insert(target);
-        *current = current.lerp(target, 1. - (-time.delta_secs() * 8.).exp());
+        let journey = motion.0[marker.0].get_or_insert_with(|| Journey::new(target));
+        let current = journey.advance(target, time.delta_secs());
         transform.translation = bevy::ui::Val2::percent(current.x, current.y);
     }
     let t = time.elapsed_secs_wrapped();
@@ -336,5 +375,37 @@ pub fn animate(
             (t * 0.7 + bubble.0).sin() * 5.,
             -(t * 5. + bubble.0 * 13.).rem_euclid(95.),
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn travel_survives_a_hitch_and_finishes_without_overshoot() {
+        let start = Vec2::new(44., 34.5);
+        let end = Vec2::new(14.5, 22.5);
+        let mut journey = Journey::new(start);
+        let first = journey.advance(end, 10.);
+        assert!(first.distance(start) > 0.);
+        assert!(
+            first.distance(end) > 1.,
+            "a stalled frame teleported the cell"
+        );
+        for _ in 0..120 {
+            let at = journey.advance(end, 1. / 60.);
+            assert!(at.x >= end.x && at.x <= start.x);
+            assert!(at.y >= end.y && at.y <= start.y);
+        }
+        assert_eq!(journey.current, end);
+    }
+
+    #[test]
+    fn new_destination_starts_at_current_visual_position() {
+        let mut journey = Journey::new(Vec2::ZERO);
+        let halfway = journey.advance(Vec2::splat(50.), 0.1);
+        assert_eq!(journey.advance(Vec2::new(20., 80.), 0.), halfway);
+        assert_eq!(journey.from, halfway);
     }
 }

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 use bevy::picking::Pickable;
+use bevy::picking::hover::Hovered;
 use bevy::prelude::*;
 use bevy::ui::Pressed;
 use bevy::ui_widgets::{Activate, Button};
@@ -30,6 +31,7 @@ struct Session {
     seed: u32,
     page: usize,
     message: String,
+    map_message: String,
     save: PathBuf,
     clock: FixedStep,
     visual_phase: f64,
@@ -91,6 +93,7 @@ fn column() -> Node {
 fn button(action: Click, enabled: bool) -> impl Bundle {
     (
         Button,
+        Hovered::default(),
         action,
         Enabled(enabled),
         Node {
@@ -221,6 +224,7 @@ fn main() {
             seed,
             page: 0,
             message,
+            map_message: String::new(),
             save: arg("--save")
                 .map(PathBuf::from)
                 .unwrap_or_else(|| PathBuf::from("cytoville-save.json")),
@@ -437,6 +441,33 @@ fn interact(
         }
         Click::Game(cmd) => {
             s.page = 0;
+            s.map_message.clear();
+            if let GameCommand::Travel { location } = &cmd {
+                let seat = s.network.as_ref().map(|n| n.seat).unwrap_or(0);
+                let district = s
+                    .runtime
+                    .content
+                    .locations
+                    .get(location)
+                    .map(|l| l.name.clone())
+                    .unwrap_or_else(|| location.clone());
+                if s.runtime.game.actors[seat].location == *location {
+                    s.map_message =
+                        format!("Already at {district}. Choose an action in the district panel →");
+                    s.dirty = true;
+                    return;
+                }
+                command(&mut s, cmd);
+                s.map_message = if !s.message.is_empty() {
+                    std::mem::take(&mut s.message)
+                } else if s.network.is_some() {
+                    format!("Travel to {district} requested; waiting for the host.")
+                } else {
+                    format!("Destination: {district}. Choose an action in the district panel →")
+                };
+                s.dirty = true;
+                return;
+            }
             command(&mut s, cmd);
         }
     }
@@ -543,7 +574,17 @@ fn network_updates(mut s: ResMut<Session>) {
             Ok(state) => {
                 let changed = state.game != s.runtime.game;
                 match s.runtime.apply_state(state) {
-                    Ok(()) => s.dirty |= changed,
+                    Ok(()) => {
+                        s.dirty |= changed;
+                        if changed && !s.map_message.is_empty() {
+                            let seat = s.network.as_ref().map(|n| n.seat).unwrap_or(0);
+                            let id = &s.runtime.game.actors[seat].location;
+                            s.map_message = format!(
+                                "Now at {}. Choose an action on the right →",
+                                s.runtime.content.locations[id].name
+                            );
+                        }
+                    }
                     Err(error) => {
                         s.message = error;
                         s.dirty = true;
@@ -628,16 +669,28 @@ fn render(
                 for i in 0..12 {
                     map.spawn((Pickable::IGNORE,city::Bubble(i as f32),UiTransform::default(),Node{position_type:PositionType::Absolute,left:Val::Percent(4.+((i*37)%90) as f32),top:Val::Percent(24.+((i*19)%60) as f32),width:Val::Px(4.+(i%4) as f32*2.),height:Val::Px(4.+(i%4) as f32*2.),border:UiRect::all(Val::Px(1.)),border_radius:BorderRadius::MAX,..default()},BorderColor::all(Color::srgba(0.4,0.8,0.7,0.25))));
                 }
-                map.spawn(Node{position_type:PositionType::Absolute,left:Val::Px(12.0),top:Val::Px(10.0),..default()}).with_child(text("THE BIOFILM METROPOLIS",18.0,MINT));
-                for id in &c.location_order{let l=&c.locations[id];let p=city::position(id,c);let cost=rules::travel_cost(c,a,id).unwrap_or(0);map.spawn(button(Click::Game(GameCommand::Travel{location:id.clone()}),cost<=a.atp&&g.active==seat)).insert((Node{position_type:PositionType::Absolute,left:Val::Percent(p.x),top:Val::Percent(p.y),padding:UiRect::all(Val::Px(8.0)),width:Val::Percent(23.0),border_radius:BorderRadius::all(Val::Px(8.0)),..default()},BackgroundColor(if a.location==*id{Color::srgba(0.10,0.29,0.27,0.94)}else{Color::srgba(0.04,0.12,0.16,0.88)}))).with_child(text(format!("{}{}\n{cost} ATP",if a.location==*id{"◉ "}else{""},l.short),14.0,if a.location==*id{MINT}else{INK}));}
+                map.spawn((Pickable::IGNORE,Node{position_type:PositionType::Absolute,left:Val::Px(12.0),top:Val::Px(10.0),..default()})).with_child((Pickable::IGNORE,text("THE BIOFILM METROPOLIS",18.0,MINT)));
+                for id in &c.location_order {
+                    let l = &c.locations[id];
+                    let p = city::position(id,c);
+                    let landmark = city::destination(id,c);
+                    let cost = rules::travel_cost(c,a,id).unwrap_or(0);
+                    // The illustration is a real input surface, not just decoration.
+                    // Rejected travel still explains the authoritative reason.
+                    map.spawn(button(Click::Game(GameCommand::Travel{location:id.clone()}),true))
+                        .insert((city::Landmark,Node{position_type:PositionType::Absolute,left:Val::Percent(landmark.x-7.),top:Val::Percent(landmark.y-5.),width:Val::Percent(14.),height:Val::Percent(10.),border:UiRect::all(Val::Px(2.)),border_radius:BorderRadius::MAX,..default()},BackgroundColor(Color::NONE),BorderColor::all(Color::NONE)));
+                    map.spawn(button(Click::Game(GameCommand::Travel{location:id.clone()}),true))
+                        .insert((Node{position_type:PositionType::Absolute,left:Val::Percent(p.x),top:Val::Percent(p.y),padding:UiRect::all(Val::Px(8.0)),width:Val::Percent(23.0),border_radius:BorderRadius::all(Val::Px(8.0)),..default()},BackgroundColor(if a.location==*id{Color::srgba(0.10,0.29,0.27,0.94)}else{Color::srgba(0.04,0.12,0.16,0.88)})))
+                        .with_child(text(format!("{}{}\n{}",if a.location==*id{"◉ "}else{""},l.short,if a.location==*id{"You are here".into()}else if cost>a.atp{format!("Needs {cost} ATP · have {}",a.atp)}else{format!("{cost} ATP")}),14.0,if a.location==*id{MINT}else{INK}));
+                }
                 for (actor,handle,label,color) in [(seat,portrait.clone(),"YOU",MINT),(1-seat,rival.clone(),"RIVAL",Color::srgb(1.,0.66,0.48))] {
                     map.spawn((Pickable::IGNORE,city::CellMarker(actor),UiTransform::default(),Node{position_type:PositionType::Absolute,width:Val::Percent(100.),height:Val::Percent(100.),..default()})).with_children(|marker|{
-                        marker.spawn((Pickable::IGNORE,ImageNode::new(handle),Node{position_type:PositionType::Absolute,left:Val::Px(-18.),top:Val::Px(-18.),width:Val::Px(36.),height:Val::Px(36.),..default()}));
-                        marker.spawn((Pickable::IGNORE,Node{position_type:PositionType::Absolute,left:Val::Px(-21.),top:Val::Px(15.),padding:UiRect::axes(Val::Px(4.),Val::Px(2.)),border_radius:BorderRadius::all(Val::Px(4.)),..default()},BackgroundColor(BG))).with_child((Pickable::IGNORE,text(label,10.,color)));
+                        marker.spawn((Pickable::IGNORE,CellPulse,UiTransform::default(),ImageNode::new(handle),Node{position_type:PositionType::Absolute,left:Val::Px(-24.),top:Val::Px(-24.),width:Val::Px(48.),height:Val::Px(48.),..default()}));
+                        marker.spawn((Pickable::IGNORE,Node{position_type:PositionType::Absolute,left:Val::Px(-21.),top:Val::Px(20.),padding:UiRect::axes(Val::Px(4.),Val::Px(2.)),border_radius:BorderRadius::all(Val::Px(4.)),..default()},BackgroundColor(BG))).with_child((Pickable::IGNORE,text(label,10.,color)));
                     });
                 }
                 map.spawn((CellPulse,UiTransform::default(),ImageNode::new(portrait.clone()),Node{position_type:PositionType::Absolute,left:Val::Px(8.0),bottom:Val::Px(4.0),width:Val::Px(130.0),height:Val::Px(130.0),..default()}));
-                map.spawn(Node{position_type:PositionType::Absolute,left:Val::Px(145.0),bottom:Val::Px(18.0),..column()}).with_children(|info|{info.spawn(text(format!("{} · {}",c.specimens[&a.specimen].name,g.looks[seat].pattern),15.0,INK));info.spawn(text(format!("{} organelles · {} stored meals · {}",a.organelles.len(),a.storage_stock,a.phase),14.0,INK));});
+                map.spawn(Node{position_type:PositionType::Absolute,left:Val::Px(145.0),right:Val::Px(12.0),bottom:Val::Px(18.0),..column()}).with_children(|info|{info.spawn(text(format!("{} · {}",c.specimens[&a.specimen].name,g.looks[seat].pattern),15.0,INK));info.spawn(text(format!("{} organelles · {} stored meals · {}",a.organelles.len(),a.storage_stock,a.phase),14.0,INK));info.spawn(text(if s.map_message.is_empty(){"Click a district picture or name; choose an action on the right."}else{&s.map_message},13.0,MINT));});
             });
             body.spawn((Node{width:Val::Percent(44.0),padding:UiRect::all(Val::Px(14.0)),..column()},BackgroundColor(PANEL))).with_children(|panel|{
                 if s.inspect{panel.spawn(text("EXPRESSED ORGANELLES",22.0,MINT));let page=s.page.min(a.organelles.len().div_ceil(4).saturating_sub(1));for id in a.organelles.iter().skip(page*4).take(4){let o=&c.organelles[id];panel.spawn(text(o.name.clone(),18.0,MINT));panel.spawn(text(format!("{} {}",o.effect,o.science),14.0,INK));}panel.spawn(button(Click::Page((page+1)%a.organelles.len().div_ceil(4).max(1)),true)).with_child(text("Next organelles",15.0,INK));panel.spawn(button(Click::Inspect,true)).with_child(text("Back to district",15.0,INK));
@@ -677,12 +730,29 @@ fn animate(
         exit.write(AppExit::Success);
     }
 }
-fn button_feedback(mut buttons: Query<(&Enabled, Has<Pressed>, &mut BorderColor), With<Button>>) {
-    for (enabled, pressed, mut border) in &mut buttons {
+type ButtonFeedbackQuery<'w, 's> = Query<
+    'w,
+    's,
+    (
+        &'static Enabled,
+        Has<Pressed>,
+        &'static Hovered,
+        Has<city::Landmark>,
+        &'static mut BorderColor,
+    ),
+    With<Button>,
+>;
+
+fn button_feedback(mut buttons: ButtonFeedbackQuery) {
+    for (enabled, pressed, hovered, landmark, mut border) in &mut buttons {
         let color = BorderColor::all(if !enabled.0 {
             PANEL
         } else if pressed {
             MINT
+        } else if hovered.get() {
+            Color::srgb(0.4, 0.8, 0.72)
+        } else if landmark {
+            Color::NONE
         } else {
             Color::srgb(0.21, 0.46, 0.42)
         });
@@ -731,6 +801,7 @@ mod tests {
             seed: 7,
             page: 0,
             message: String::new(),
+            map_message: String::new(),
             save: PathBuf::new(),
             clock: FixedStep::from_hz(30.),
             visual_phase: 0.,
@@ -805,6 +876,7 @@ mod tests {
             seed: 7,
             page: 0,
             message: String::new(),
+            map_message: String::new(),
             save: PathBuf::new(),
             clock: FixedStep::from_hz(30.0),
             visual_phase: 0.0,
@@ -869,6 +941,7 @@ mod tests {
             seed: 7,
             page: 0,
             message: String::new(),
+            map_message: String::new(),
             save: PathBuf::new(),
             clock: FixedStep::from_hz(30.0),
             visual_phase: 0.0,

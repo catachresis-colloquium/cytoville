@@ -81,9 +81,12 @@ xdotool type --clearmodifiers --delay 80 Acceptance
 key Return
 wait_for 'rename committed through keyboard' state '.game.actors[0].name == "AmoebaAcceptance"'
 shot 03-customisation
-click 140 348 # University
+click 135 285 # University illustration, not its name card.
 wait_for 'travel cost' state '.game.actors[0].atp == 90'
 before="$(jq -c .game "$save")"
+click 135 285 # Already here: feedback without another command or cost.
+[[ "$(jq -c .game "$save")" == "$before" ]] || { echo 'FAIL: repeated destination changed game state'; exit 1; }
+shot 03b-map-picture
 click 1085 294 # Locked tier two
 [[ "$(jq -c .game "$save")" == "$before" ]] || { echo 'FAIL: disabled course changed game state'; exit 1; }
 click 1085 232 # Basal metabolism

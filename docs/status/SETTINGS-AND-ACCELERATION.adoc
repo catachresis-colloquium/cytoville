@@ -1,0 +1,84 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Settings and accelerator implementation work
+:revdate: 2026-11-07
+
+== Owner clarification
+
+Implement the discussed coprocessor backends and usable kernels, not just a
+research catalogue. Both adiabatic directions (quantum annealing and reversible,
+energy-recovering classical computing) need an early scaffold and harness.
+Their research/contribution material belongs at the bottom of Performance,
+not as the dominant Settings screen.
+
+Provide top-level Settings tabs:
+
+* Performance: actual backend availability, selection and useful workload
+  information; experimental adiabatic work and participation at the bottom.
+* Accessibility: high contrast, reduced animation, mono sound and voiceover.
+* Video: V-sync, window/border/fullscreen mode and resolution.
+* Game: difficulty and an explicit “Inject Evil Weevil” toggle.
+* Players: single/multiplayer, AI count, capability and names.
+* Server: a contextual Game Server Admin status/details panel and launch/link
+  to the actual administration application when used alongside the game.
+
+The current research catalogue in draft PR 11 is an intermediate implementation
+and does not satisfy this clarified Settings design. Do not mark this scope
+complete based on disabled buttons, device-name enums or interface declarations.
+Keep hosting local; no hardware purchase, external messaging or cloud compute
+activation is authorised by these settings.
+
+== Reuse inventory checked 7 November 2026
+
+IDApTIK main: `8d66e70d972979ca880a5548a1d6af2ba6496efe`.
+Its current Cargo dependencies do not consume enaction-accelerator, and the
+published July roadmap describes broad coprocessor support as decided but
+undefined. The Moletaire “coprocessors” are in-game equipment, not host-device
+backends. No open IDApTIK PR containing a hardware backend was returned in the
+inspection. This does not establish the state of another developer's unpublished
+worktree.
+
+The actual reusable studio implementation is
+`catachresis-colloquium/enaction-engine` at
+`175cfde9bd2af09bc78b601da186207202b202a2`. Do not confuse it with the separate
+`hyperpolymath/enaction` repository (the local directory named enaction-engine
+currently points to that different repository).
+
+Reusable now, subject to dependency/build integration and consumer tests:
+
+* Operation and buffer contracts, backend reports/selection, execution lanes,
+  determinism levels, failures and the staged support ladder.
+* Scalar CPU references and a native Zig CPU adapter for fixed-integer dot and
+  matrix products plus float ReLU, ReLU6, matrix product, addition and multiplication.
+* Idris ABI declarations, the Zig FFI boundary and associated conformance tests.
+
+The inspected registry supplies ScalarCpu or NativeZigCpu. Gpu, Tpu, Npu, Dsp,
+Ppu, Math, Fpga, Vpu, Qpu and Crypto enum entries are not implementations of
+those devices. The native Zig arithmetic inspected is scalar loops, not evidence
+of a vectorised Xeon/i9-specific kernel. Remote-job types are not a connected
+physical QPU. Do not describe this as a large collection of ready hardware
+backends to copy from IDApTIK.
+
+Both games should consume the same shared operation implementations with small
+game-specific adapters. The accepted operation-first ADR remains the design
+authority. Each new backend needs an actual consumer, reference equivalence or
+an explicit error bound, resource limits, cancellation/failure handling and
+end-to-end measurements. Hardware-dependent validation must name the tested
+device/driver; simulated tests do not count as physical-device support.
+
+== Immediate correctness and acceptance
+
+* Fix illustrated-map click targets, repeated-destination feedback and visible
+  travel before expanding Settings. Validate picture clicks and unchanged ATP/
+  revision on a repeated destination; test rerouting and delayed-frame motion.
+* Replace the oversized catalogue with tabbed Settings and persist actual
+  supported preferences. Unsupported options must give the specific missing
+  implementation/driver/device requirement.
+* The current game has two actors. AI-count changes must update authoritative
+  rules, runtime scheduling, saves, Elixir protocol, UI and proof scope together.
+  Never add a dropdown claiming seats that the runtime cannot run.
+* Performance remains an open blocker: the owner reports sluggish window/input
+  behaviour and later reports improved buttons but broken map movement. Native
+  application update cadence is not input-to-display latency. PresentMon ETW
+  capture was denied by Windows permissions; no privilege changes were made.
+* The GSA draft profile and research transfers are documented in
+  architecture/FUTURE-COMPUTING.adoc. A live GSA adapter is still outstanding.
