@@ -373,6 +373,7 @@ fn interact(
         Click::SettingsTab(tab) => {
             settings.tab = tab;
             settings.focus = 0;
+            settings.edit_ai_name = None;
             settings.research_open = false;
             settings.contribute = false;
         }
