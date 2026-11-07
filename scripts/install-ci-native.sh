@@ -8,7 +8,7 @@ echo "70e49664a74374b48b51e6f3fdfbf437f6395d42509050588bd49abe52ba3d00  $tool_di
 tar -xJf "$tool_dir/zig.tar.xz" -C "$tool_dir"
 echo "$tool_dir/zig-x86_64-linux-0.16.0" >> "${GITHUB_PATH:?}"
 sudo apt-get update
-sudo apt-get install -y build-essential pkg-config libasound2-dev libudev-dev libx11-dev libxrandr-dev libxi-dev libxkbcommon-dev libwayland-dev chezscheme
+sudo apt-get install -y build-essential pkg-config libasound2-dev libudev-dev libx11-dev libxrandr-dev libxi-dev libxkbcommon-dev libwayland-dev libssl-dev openssl chezscheme
 git init "$tool_dir/Idris2"
 git -C "$tool_dir/Idris2" remote add origin https://github.com/idris-lang/Idris2
 git -C "$tool_dir/Idris2" fetch --depth=1 origin 15a3e4e70843f7a34100f6470c04b791330788df

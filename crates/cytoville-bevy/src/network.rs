@@ -3,8 +3,8 @@ use cytoville_core::Command;
 use cytoville_runtime::Runtime;
 use serde_json::{Value, json};
 use std::{
-    io::{BufRead, BufReader, Write},
-    net::TcpStream,
+    io::{BufRead, BufReader, Read, Write},
+    net::{TcpStream, ToSocketAddrs},
     sync::mpsc::{self, Receiver, Sender},
     thread,
     time::Duration,
@@ -16,7 +16,10 @@ pub struct Network {
     pub invitation: String,
     pub resume: Value,
 }
-fn exchange(reader: &mut BufReader<TcpStream>, request: &Value) -> Result<Value, String> {
+trait Connection: Read + Write + Send {}
+impl<T: Read + Write + Send> Connection for T {}
+type Reader = BufReader<Box<dyn Connection>>;
+fn exchange(reader: &mut Reader, request: &Value) -> Result<Value, String> {
     writeln!(reader.get_mut(), "{request}").map_err(|e| e.to_string())?;
     let mut bytes = Vec::new();
     std::io::Read::take(&mut *reader, 8 * 1024 * 1024 + 1)
@@ -34,15 +37,46 @@ fn exchange(reader: &mut BufReader<TcpStream>, request: &Value) -> Result<Value,
     }
     Ok(reply["data"].clone())
 }
-fn connect(address: &str) -> Result<BufReader<TcpStream>, String> {
-    let stream = TcpStream::connect(address).map_err(|e| e.to_string())?;
+fn connect(address: &str) -> Result<Reader, String> {
+    let tls = address.starts_with("tls://");
+    let endpoint = address.strip_prefix("tls://").unwrap_or(address);
+    let addresses: Vec<_> = endpoint
+        .to_socket_addrs()
+        .map_err(|e| e.to_string())?
+        .collect();
+    if !tls && addresses.iter().any(|a| !a.ip().is_loopback()) {
+        return Err("Remote multiplayer requires tls://".into());
+    }
+    let stream = addresses
+        .iter()
+        .find_map(|a| TcpStream::connect_timeout(a, Duration::from_secs(3)).ok())
+        .ok_or("Cannot connect to server")?;
     stream
         .set_read_timeout(Some(Duration::from_secs(3)))
         .map_err(|e| e.to_string())?;
     stream
         .set_write_timeout(Some(Duration::from_secs(3)))
         .map_err(|e| e.to_string())?;
-    Ok(BufReader::new(stream))
+    if tls {
+        let host = endpoint
+            .rsplit_once(':')
+            .ok_or("Missing TLS port")?
+            .0
+            .trim_matches(['[', ']']);
+        let mut builder = native_tls::TlsConnector::builder();
+        builder.min_protocol_version(Some(native_tls::Protocol::Tlsv12));
+        if let Ok(path) = std::env::var("CYTOVILLE_CA_CERT") {
+            let pem = std::fs::read(path).map_err(|e| e.to_string())?;
+            builder.add_root_certificate(
+                native_tls::Certificate::from_pem(&pem).map_err(|e| e.to_string())?,
+            );
+        }
+        let connector = builder.build().map_err(|e| e.to_string())?;
+        let secured = connector.connect(host, stream).map_err(|e| e.to_string())?;
+        Ok(BufReader::new(Box::new(secured)))
+    } else {
+        Ok(BufReader::new(Box::new(stream)))
+    }
 }
 impl Network {
     pub fn start(address: String, request: Value) -> Result<(Self, Runtime), String> {

@@ -15,8 +15,10 @@ defmodule Cytoville.Listener do
       ip: Application.fetch_env!(:cytoville_server, :bind)
     ]
 
-    {:ok, socket} = :gen_tcp.listen(Application.fetch_env!(:cytoville_server, :port), opts)
-    {:ok, {_ip, port}} = :inet.sockname(socket)
+    {:ok, socket} =
+      Cytoville.Transport.listen(Application.fetch_env!(:cytoville_server, :port), opts)
+
+    {:ok, {_ip, port}} = Cytoville.Transport.sockname(socket)
 
     if path = System.get_env("CYTOVILLE_READY_FILE"),
       do: File.write!(path, Integer.to_string(port))
@@ -29,16 +31,20 @@ defmodule Cytoville.Listener do
   def handle_call(:port, _from, state), do: {:reply, state.port, state}
 
   defp accept(listener) do
-    case :gen_tcp.accept(listener) do
+    case Cytoville.Transport.accept(listener) do
       {:ok, socket} ->
         {:ok, pid} =
           Task.Supervisor.start_child(Cytoville.Connections, fn ->
             receive do
-              {:socket, ^socket} -> loop(socket, nil, 0, System.monotonic_time(:second))
+              {:socket, ^socket} ->
+                case Cytoville.Transport.handshake(socket) do
+                  {:ok, ready} -> loop(ready, nil, 0, System.monotonic_time(:second))
+                  _ -> Cytoville.Transport.close(socket)
+                end
             end
           end)
 
-        :ok = :gen_tcp.controlling_process(socket, pid)
+        :ok = Cytoville.Transport.controlling_process(socket, pid)
         send(pid, {:socket, socket})
         accept(listener)
 
@@ -48,21 +54,21 @@ defmodule Cytoville.Listener do
   end
 
   defp loop(socket, auth, count, epoch) do
-    case :gen_tcp.recv(socket, 0, 60_000) do
+    case Cytoville.Transport.recv(socket, 0, 60_000) do
       {:ok, line} ->
         now = System.monotonic_time(:second)
         next_count = if now == epoch, do: count + 1, else: 1
 
         if next_count > 30 do
-          :gen_tcp.close(socket)
+          Cytoville.Transport.close(socket)
         else
           {reply, next_auth} = decode_and_route(line, auth)
-          :gen_tcp.send(socket, [:json.encode(reply), "\n"])
+          Cytoville.Transport.send(socket, [:json.encode(reply), "\n"])
           loop(socket, next_auth, next_count, now)
         end
 
       {:error, _} ->
-        :gen_tcp.close(socket)
+        Cytoville.Transport.close(socket)
     end
   end
 

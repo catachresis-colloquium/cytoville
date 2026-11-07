@@ -1,0 +1,43 @@
+= Local encrypted multiplayer
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+== Operation
+
+The Elixir listener stays bound to loopback. Set both `CYTOVILLE_TLS_CERT` and
+`CYTOVILLE_TLS_KEY` to PEM files before starting `mix run --no-halt`. A missing
+half of the pair prevents startup. TLS 1.2 and 1.3 are accepted.
+
+Connect Bevy with `--server tls://localhost:4280 --host --session NAME`.
+For a private local CA, set `CYTOVILLE_CA_CERT` on each client to its PEM certificate.
+The client checks trust and the hostname, including on resume; no insecure mode
+is provided. Without TLS, clients refuse non-loopback destinations.
+
+`CYTOVILLE_E2E_TLS=1 bash scripts/cytoville-e2e.sh` generates a one-day localhost
+certificate in a private temporary directory. It runs untrusted-certificate and
+wrong-hostname rejection checks, then the real UMS, multiplayer, reconnect and
+native-rival scenario over TLS. Temporary keys are removed when the test exits.
+The standard CI script runs both plaintext-loopback and TLS variants.
+
+== Current acceptance limits
+
+This addition requires a successful TLS CI run before acceptance. The local WSL
+service stopped responding during compilation (Wsl/Service/WSAETIMEDOUT), so no
+local TLS pass is claimed. No public host or domain is provisioned, by owner request.
+
+Graphical startup was observed, but Windows capture returned partial WSL regions
+and input failed with "foreground window did not report a process id". Graphical
+interaction acceptance remains open; a rendering smoke test is not equivalent.
+
+== Production proof policy blocker
+
+The SHA-pinned production proof workflow is excluded by the organisation Actions
+allowlist. Repository-level updates return HTTP 409 because the policy is inherited;
+organisation policy access returns HTTP 403 requiring admin:org or Actions-policy
+permission. No policy was weakened and the proof gate remains enabled.
+
+An authorised organisation administrator must permit the reviewed exact workflow
+`hyperpolymath/cicd-suite/.github/workflows/creusot-gate.yml@faba7124aee223098d33497bdadc96e111829752`
+and its exact third-party toolchain action
+`dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f`, while preserving
+existing entries and SHA pinning. Then rerun Production resource proofs on the
+current PR head. PR #3 must remain unmerged until the checks pass.

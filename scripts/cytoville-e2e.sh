@@ -17,6 +17,13 @@ jq '.content.SPECIMENS.euglena.name = "UMS end-to-end cell"' "$scratch/source.js
 export CYTOVILLE_WORKER="$target/debug/cytoville-server" CYTOVILLE_PACKAGE="$scratch/package.json"
 export CYTOVILLE_PORT=0 CYTOVILLE_READY_FILE="$scratch/port"
 export CYTOVILLE_CHECKPOINT_DIR="$scratch/checkpoints"
+if [[ "${CYTOVILLE_E2E_TLS:-0}" == 1 ]]; then
+  openssl req -x509 -newkey rsa:2048 -sha256 -nodes -days 1 \
+    -subj /CN=localhost -addext subjectAltName=DNS:localhost \
+    -keyout "$scratch/key.pem" -out "$scratch/cert.pem" 2> "$scratch/certificate.log"
+  chmod 600 "$scratch/key.pem"
+  export CYTOVILLE_TLS_CERT="$scratch/cert.pem" CYTOVILLE_TLS_KEY="$scratch/key.pem" CYTOVILLE_CA_CERT="$scratch/cert.pem"
+fi
 (cd server && exec mix run --no-halt) > "$scratch/server.log" 2>&1 &
 server_pid=$!
 for _ in $(seq 1 300); do
@@ -26,4 +33,8 @@ for _ in $(seq 1 300); do
 done
 if [[ ! -s "$scratch/port" ]]; then cat "$scratch/server.log"; exit 1; fi
 export CYTOVILLE_E2E_SERVER="127.0.0.1:$(cat "$scratch/port")"
-cargo test -p cytoville-bevy --test end_to_end --locked -- --ignored --nocapture
+if [[ "${CYTOVILLE_E2E_TLS:-0}" == 1 ]]; then
+  export CYTOVILLE_E2E_SERVER="tls://localhost:$(cat "$scratch/port")"
+  env -u CYTOVILLE_CA_CERT cargo test -p cytoville-bevy --test end_to_end --locked rejects_untrusted_tls -- --ignored --nocapture
+fi
+cargo test -p cytoville-bevy --test end_to_end --locked ums_to_elixir -- --ignored --nocapture

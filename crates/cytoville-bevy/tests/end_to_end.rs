@@ -30,6 +30,11 @@ fn await_revision(client: &Network, revision: u64) -> Runtime {
 #[ignore = "requires real Elixir host; scripts/cytoville-e2e.sh"]
 fn ums_to_elixir_to_bevy_transport_and_native_rival() {
     let address = std::env::var("CYTOVILLE_E2E_SERVER").expect("set server address");
+    if address.starts_with("tls://") {
+        let request = json!({"op":"create","session":"tls-negative","specimen":"euglena","scenario":"fresh-daughter","difficulty":"standard","seed":7,"multiplayer":false});
+        let wrong_host = address.replace("localhost", "127.0.0.1");
+        assert!(Network::start(wrong_host, request).is_err());
+    }
     let create = |id: &str, multiplayer| json!({"op":"create","session":id,"specimen":"euglena","scenario":"fresh-daughter","difficulty":"standard","seed":7,"multiplayer":multiplayer});
     let (host, initial) = Network::start(address.clone(), create("e2e-human", true)).unwrap();
     assert_eq!(
@@ -62,4 +67,14 @@ fn ums_to_elixir_to_bevy_transport_and_native_rival() {
     assert_eq!(state.game.active, 0);
     assert!(state.trace.events.iter().any(|e| !e.caused_by.is_empty()));
     state.validate().unwrap();
+}
+
+#[test]
+#[ignore = "requires TLS host without its CA in the trust store"]
+fn rejects_untrusted_tls() {
+    let address = std::env::var("CYTOVILLE_E2E_SERVER").expect("TLS address");
+    assert!(address.starts_with("tls://"));
+    assert!(std::env::var("CYTOVILLE_CA_CERT").is_err());
+    let request = json!({"op":"create","session":"tls-negative","specimen":"euglena","scenario":"fresh-daughter","difficulty":"standard","seed":7,"multiplayer":false});
+    assert!(Network::start(address, request).is_err());
 }
