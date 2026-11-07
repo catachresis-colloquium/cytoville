@@ -321,9 +321,16 @@ fn save(s: &Session) -> Result<(), String> {
     if s.network.is_some() {
         return Err("The multiplayer server owns this session".into());
     }
-    let bytes = serde_json::to_vec(&s.runtime).map_err(|e| e.to_string())?;
+    let bytes = {
+        let _timing = performance::Span::new("save_serialize_ms");
+        serde_json::to_vec(&s.runtime).map_err(|e| e.to_string())?
+    };
     let temp = s.save.with_extension("tmp");
-    std::fs::write(&temp, bytes).map_err(|e| e.to_string())?;
+    {
+        let _timing = performance::Span::new("save_write_ms");
+        std::fs::write(&temp, bytes).map_err(|e| e.to_string())?;
+    }
+    let _timing = performance::Span::new("save_replace_ms");
     std::fs::rename(&temp, &s.save).map_err(|e| e.to_string())
 }
 fn load(s: &mut Session) -> Result<(), String> {
@@ -343,6 +350,7 @@ fn command(s: &mut Session, cmd: GameCommand) {
     let result = if let Some(net) = &s.network {
         net.command(s.runtime.game.revision, &cmd)
     } else {
+        let _timing = performance::Span::new("local_dispatch_ms");
         s.runtime.dispatch(0, &cmd)
     };
     s.message = match result {

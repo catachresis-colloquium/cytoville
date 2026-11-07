@@ -88,3 +88,18 @@ Official PresentMon 2.6.0 was checksum-verified but refused ETW capture with
 access denied. Windows requires an elevated trace process or membership of
 Performance Log Users. No privileges or group membership were changed.
 Click-to-photon and presentation-queue measurements remain outstanding.
+
+The later native Settings preview, observed on RTX 4070/Vulkan, recorded 72
+command/autosave samples: median 4.523 ms, p95 14.029 ms, maximum 377.376 ms.
+The bounded 6,000-sample app-update series had median 16.678 ms, p95 19.938 ms
+and maximum 148.757 ms. Startup-to-first-update was 4,563.777 ms. This was an
+interactive user session, not a controlled before/after performance comparison.
+The command maximum is evidence of an occasional stall, not proof that saving,
+simulation, the GPU or a specific device caused it.
+
+Opt-in profiles now split `local_dispatch_ms`, `save_serialize_ms`,
+`save_write_ms` and `save_replace_ms`, retaining `command_and_autosave_ms`.
+Measure these on the same repeatable journey before choosing asynchronous
+persistence, clone reduction, a cache or a numeric accelerator. Do not weaken
+save ordering or acknowledge server commands before their durability contract
+is met merely to improve a timing number.

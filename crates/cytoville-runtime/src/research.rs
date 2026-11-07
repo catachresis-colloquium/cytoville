@@ -174,7 +174,7 @@ pub fn run_local_harness(costs: [u32; 4]) -> Result<HarnessReceipt, String> {
     if costs.iter().any(|&c| c > 100_000) {
         return Err("Travel cost exceeds harness bounds".into());
     }
-    let penalty = i64::from(*costs.iter().max().unwrap()) + 1;
+    let penalty = i64::from(costs.into_iter().fold(0, u32::max)) + 1;
     // Minimise cost subject to exactly one selection: cost + P(sum(x)-1)^2.
     let mut terms = Vec::with_capacity(10);
     for (i, cost) in costs.iter().enumerate() {
@@ -190,7 +190,7 @@ pub fn run_local_harness(costs: [u32; 4]) -> Result<HarnessReceipt, String> {
     };
     let (bits, energy) = model.solve_reference(16, || false)?;
     model.verify_candidate(bits, energy)?;
-    if bits.count_ones() != 1 || energy != i64::from(*costs.iter().min().unwrap()) {
+    if bits.count_ones() != 1 || energy != i64::from(costs.into_iter().fold(u32::MAX, u32::min)) {
         return Err("QUBO failed the independent minimum-cost oracle".into());
     }
     let circuit = Circuit {

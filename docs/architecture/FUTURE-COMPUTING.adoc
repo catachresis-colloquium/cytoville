@@ -5,16 +5,19 @@
 == Product intent and implementation boundary
 
 The owner wants games to make emerging computing visible and invite players to
-help develop it. Cytoville now has a Settings / Future computing catalogue:
-nine technology groups, disabled activation controls, explanations and an
-active Learn and contribute route. It opens research and project links only
-after an explicit player action. It does not probe devices, download drivers,
-submit jobs, collect telemetry or activate experimental backends.
+help develop it. Cytoville now has six Settings tabs, with an expandable
+adiabatic research section at the bottom of Performance. The section includes
+source links and a bounded local classical-reference harness for QUBO candidate
+verification and reversible logic. It opens external links only after an
+explicit player action. It does not download drivers, submit cloud jobs, collect
+telemetry or activate physical experimental backends. See
+../status/SETTINGS-AND-ACCELERATION.adoc for implementation and acceptance scope.
 
 The ordinary CPU game, Bevy rendering, audio and TLS are existing capabilities;
 their presence is not a claim that the optional specialist backends exist.
-The catalogue is an implementation of discovery and participation, not hardware
-support. Research information is dated and bundled, not automatically current.
+The research section provides discovery, participation and local reference
+checks, not physical hardware support. Research information is dated and
+bundled, not automatically current.
 
 Do not label an unimplemented backend as a deficient computer. Future support
 reports must distinguish these states and retain their evidence:
@@ -57,6 +60,73 @@ buffers, failure/cancellation behaviour and complete workload measurements.
 Do not fork a second studio accelerator framework inside Cytoville.
 
 == Candidate workloads, not promised speedups
+
+=== Recommended implementation order after the Settings slice
+
+Finish CI and responsiveness diagnosis first. The command/autosave profile
+contains an isolated 377 ms stall; it does not identify which subsystem caused
+it. Separate dispatch, serialisation, writing and replacement measurements
+before adding a cache or moving authoritative work between backends.
+
+Then build one complete district/encounter through the existing local and
+Elixir-hosted paths. Proposed proving ground: enter Gym & Spa, see a distinct
+district scene, learn movement/contact controls, enter a protist sparring
+encounter, resolve it through authoritative commands, return with consistent
+resources, and reconnect from a second client. This is an implementation
+proposal, not a claim that real-time combat or district interiors exist.
+Street contact encounters can reuse the resulting encounter lifecycle later.
+
+Keep player/scene/encounter identities, session ownership, command revisions,
+replay, save versioning and failure handling explicit. A real-time encounter
+needs its own input/tick and reconciliation contract; it must not assume that
+the current turn-command transport already provides fighting-game netcode.
+Implement the smallest contract extension required by this encounter, and
+test duplicate/stale input, disconnect, timeout and replay before expanding
+seat counts or competitive scores.
+
+Attach acceleration to a measured workload from that slice: a shared CPU
+reference plus an actual CPU/SIMD or GPU implementation, including transfer,
+queue and failure costs. Presentation particles/fields may use advisory GPU
+work. Authoritative hit outcomes require the declared reproducibility contract.
+The complete requested device family list remains in scope; implementation
+order does not reduce it to adiabatic research or disabled menu entries.
+
+Add the startup/character-choice explanation and short tutorial as part of
+this playable slice. Leaderboards follow versioned scoring, host validation,
+and replay evidence. GSA service integration follows an actual status/lifecycle
+contract. Consider LMDB/Dragonfly only for an identified persistence or repeated
+read workload with measured benefit and an invalidation/durability design;
+neither is currently established as the cure for local input latency.
+
+=== Different boundaries have different jobs
+
+The current server supervises an isolated Rust worker with an Elixir Port;
+Rust owns the game and calls the Zig native decision boundary whose layouts
+are defined by Idris2. Retain this working path while adding narrow operations.
+
+SNIFs' documented scope is pure numeric/byte-buffer computation in a Wasm
+sandbox, with fallible results and ReleaseSafe guests. It is not a general
+device-driver, network or filesystem boundary. Use pooled, bounded SNIF work
+where the BEAM actually needs such computation; do not route every Bevy frame
+through Elixir and a Wasm guest. Native device backends belong behind Enaction's
+operation contracts. Device loss, timeout and cancellation must be explicit.
+
+`hyperpolymath/unified-api-adapter` main inspected at
+`d3554797ffe3da5c2542f52b6193d6a65e47d591` is not yet a usable transport
+dependency for this game. Its Idris dispatch model names REST/MCP transports,
+but the inspected Zig main contains template example operations, not those
+transport implementations. Do not infer working routing from a model or an
+exported function that ignores its input. Its intended role is service-protocol
+adaptation (for example GSA service access), not per-frame accelerator dispatch.
+Require implemented transports and seam/conformance tests before pinning it.
+
+Evidence: SNIFs README scope at `hyperpolymath/snifs`; unified adapter README,
+`src/interface/Abi/Dispatch.idr`, and `src/interface/ffi/src/main.zig` at the
+revision above; Cytoville `server/lib/cytoville/session.ex`, native Rust/Zig
+boundary and `docs/verification/PERFORMANCE.adoc`. No SNIF or unified-adapter
+integration was added by this assessment.
+
+=== Candidate workload acceptance
 
 [cols="1,2,2"]
 |===

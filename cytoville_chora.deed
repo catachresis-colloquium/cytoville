@@ -618,7 +618,8 @@
         :coverage-percent 0)
       (session :date "2026-11-07" :scope "Bevy presentation and resource-proof CI" :evidence "Hosted 0.14 proof run 42365155854; local graphical TLS journey; portrait cache regression; bounded CPU timing samples")
       (session :date "2026-11-07" :scope "Future computing catalogue and responsiveness diagnostics" :evidence "Native settings rendering; modal-input regression; architecture/FUTURE-COMPUTING.adoc; verification/PERFORMANCE.adoc. No specialist hardware implementation claimed.")
-      (session :date "2026-11-07" :scope "Tabbed Settings, configured rival and bounded adiabatic reference harness" :evidence "Settings graphical journey and persistence; runtime configuration/save tests; QUBO candidate/budget/cancellation tests and reversible truth table/inverse checks. Hardware acceleration, energy recovery and whole-game proof are not claimed."))
+      (session :date "2026-11-07" :scope "Tabbed Settings, configured rival and bounded adiabatic reference harness" :evidence "Settings graphical journey and persistence; runtime configuration/save tests; QUBO candidate/budget/cancellation tests and reversible truth table/inverse checks. Hardware acceleration, energy recovery and whole-game proof are not claimed.")
+      (session :date "2026-11-07" :scope "Integration order and command stall diagnosis" :evidence "Inspected Elixir/native paths, SNIF scope and unified adapter implementation. Removed production harness unwrap/expect findings; native runtime tests pass. Added dispatch/serialisation/write/replace profile spans. No new hardware or transport support claimed."))
     ; debt — Meander debt list
     ; Things found but not fixed. Carried between sessions.
     ; Becomes the next session's Phase 0 input.
