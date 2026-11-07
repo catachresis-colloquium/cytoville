@@ -11,5 +11,6 @@ defmodule CytovilleServer.MixProject do
       deps: []
     ]
 
-  def application, do: [extra_applications: [:logger, :crypto], mod: {Cytoville.Application, []}]
+  def application,
+    do: [extra_applications: [:logger, :crypto, :ssl], mod: {Cytoville.Application, []}]
 end

@@ -14,6 +14,51 @@ pub struct Runtime {
     pub trace: Trace,
 }
 
+pub const MAX_TRACE_EVENTS: usize = 100_000;
+pub const MAX_NATIVE_TICKS: u64 = 1_000_000;
+
+/// Mutable session state; immutable content is delivered during the handshake.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RuntimeState {
+    pub game: Game,
+    pub memory: Memory,
+    pub ai_tick: u64,
+    pub trace: Trace,
+}
+
+impl RuntimeState {
+    pub fn validate(&self, content: &Content) -> Result<(), String> {
+        validate_state(content, &self.game, self.ai_tick, &self.trace)
+    }
+}
+
+pub fn content_id(content: &Content) -> Result<String, String> {
+    let value = serde_json::to_value(content).map_err(|e| e.to_string())?;
+    Ok(cytoville_core::package::Package::compile(value)?.content_sha256)
+}
+
+fn validate_state(
+    content: &Content,
+    game: &Game,
+    ai_tick: u64,
+    trace: &Trace,
+) -> Result<(), String> {
+    if trace.events.len() > MAX_TRACE_EVENTS {
+        return Err(format!(
+            "Session trace capacity exceeded ({MAX_TRACE_EVENTS} events); export the last acknowledged state"
+        ));
+    }
+    if ai_tick > MAX_NATIVE_TICKS {
+        return Err(format!(
+            "Session native-tick capacity exceeded ({MAX_NATIVE_TICKS}); export the last acknowledged state"
+        ));
+    }
+    content.validate()?;
+    game.validate(content)?;
+    trace.validate().map_err(|e| e.join("; "))?;
+    Ok(())
+}
+
 impl Runtime {
     pub fn new(
         content: Content,
@@ -38,6 +83,20 @@ impl Runtime {
     pub fn dispatch(&mut self, seat: usize, command: &Command) -> Result<(), String> {
         let mut next = self.clone();
         next.game = apply(&next.content, &next.game, seat, command)?;
+        // Record accepted human commands too: multiplayer has no native rival
+        // to produce the causal trace on its behalf.
+        let cause = next.trace.events.last().map(|e| e.id).into_iter().collect();
+        next.record(
+            Domain::BehaviouralSelection,
+            &serde_json::to_string(command).map_err(|e| e.to_string())?,
+            seat as i32,
+            cause,
+        );
+        next.trace
+            .tropes
+            .last_mut()
+            .ok_or("Missing command trace")?
+            .bearer = format!("cell-{seat}");
         if !next.game.multiplayer && next.game.active == 1 && next.game.status == "playing" {
             next.run_rival()?;
         }
@@ -46,12 +105,30 @@ impl Runtime {
         Ok(())
     }
     pub fn validate(&self) -> Result<(), String> {
-        self.content.validate()?;
-        self.game.validate(&self.content)?;
-        self.trace.validate().map_err(|e| e.join("; "))?;
-        if self.ai_tick > 1_000_000 || self.trace.events.len() > 100_000 {
-            return Err("Save exceeds simulation limits".into());
+        validate_state(&self.content, &self.game, self.ai_tick, &self.trace)
+    }
+    pub fn state(&self) -> RuntimeState {
+        RuntimeState {
+            game: self.game.clone(),
+            memory: self.memory,
+            ai_tick: self.ai_tick,
+            trace: self.trace.clone(),
         }
+    }
+    pub fn into_state(self) -> RuntimeState {
+        RuntimeState {
+            game: self.game,
+            memory: self.memory,
+            ai_tick: self.ai_tick,
+            trace: self.trace,
+        }
+    }
+    pub fn apply_state(&mut self, state: RuntimeState) -> Result<(), String> {
+        state.validate(&self.content)?;
+        self.game = state.game;
+        self.memory = state.memory;
+        self.ai_tick = state.ai_tick;
+        self.trace = state.trace;
         Ok(())
     }
     fn record(&mut self, domain: Domain, kind: &str, value: i32, cause: Vec<u64>) -> u64 {
@@ -66,7 +143,7 @@ impl Runtime {
         });
         self.trace.events.push(TraceEvent {
             id,
-            tick: self.ai_tick,
+            tick: self.game.revision,
             trope: TropeId(id),
             value_milli: value,
             confidence: None,
@@ -106,7 +183,7 @@ impl Runtime {
                 Domain::Affective,
                 "oxidative-distress",
                 (self.game.actors[1].stress * 10.0) as i32,
-                vec![],
+                self.trace.events.last().map(|e| e.id).into_iter().collect(),
             );
             let motive = self.record(
                 Domain::Conative,
@@ -270,5 +347,37 @@ impl Runtime {
             }
         }
         best.map(|(_, l, a)| (l, a))
+    }
+}
+
+#[cfg(test)]
+mod capacity_tests {
+    use super::*;
+
+    #[test]
+    fn trace_budget_accepts_the_boundary_then_rejects_atomically_without_losing_history() {
+        let mut runtime = Runtime::new(
+            Content::builtin(),
+            "euglena",
+            "fresh-daughter",
+            "standard",
+            7,
+            true,
+        )
+        .unwrap();
+        for _ in 0..MAX_TRACE_EVENTS - 1 {
+            runtime.record(Domain::BehaviouralSelection, "capacity-fixture", 0, vec![]);
+        }
+        runtime.dispatch(0, &Command::EndTurn).unwrap();
+        assert_eq!(runtime.trace.events.len(), MAX_TRACE_EVENTS);
+        let before = runtime.game.clone();
+        let last = runtime.trace.events.last().unwrap().clone();
+        let error = runtime.dispatch(1, &Command::EndTurn).unwrap_err();
+        assert!(error.contains("trace capacity"), "{error}");
+        assert_eq!(runtime.game, before);
+        assert_eq!(runtime.trace.events.len(), MAX_TRACE_EVENTS);
+        assert_eq!(runtime.trace.events.last(), Some(&last));
+        runtime.validate().unwrap();
+        serde_json::to_writer(std::io::sink(), &runtime).unwrap();
     }
 }

@@ -21,11 +21,48 @@ The native rival is disabled only for these two-human sessions.
 
 Limits: 64 sessions, 64 KiB requests, 30 requests per second per connection,
 60-second idle sockets, 30-minute session inactivity and a 10-second worker reply
-timeout. Session state is in memory: a worker/server restart ends that session.
-There is no matchmaking, account system, cloud deployment or durable multiplayer
-store. Default binding is loopback. Internet operators must supply encrypted,
+timeout. Sessions checkpoint accepted transitions and can resume after a restart.
+There is no matchmaking, account system or cloud deployment.
+Default binding is loopback. Internet operators must supply encrypted,
 authenticated ingress; bearer keys must not be published in logs.
 
 This follows the Elixir supervision / native-authority separation requested for
 IDApTIK-like multiplayer. It does not claim to reuse an IDApTIK server that the
 inspected repository did not contain.
+
+== Native rival and UMS sessions
+
+Start the server with `CYTOVILLE_PACKAGE=/absolute/path/package.json` to load a
+UMS-compiled package for all new sessions. Invalid packages fail closed.
+To resume checkpoints with `CYTOVILLE_PACKAGE` set, the path must refer to a
+valid package. Alternatively, unset it to resume with checkpointed content.
+Use `cytoville --host --native-rival --session NAME` for a hosted Evil Weevil
+opponent. Without `--native-rival`, the host waits for a human guest.
+Both modes carry the complete Enaction trace and native state to the client.
+Immutable content is delivered at create/join/resume with a canonical SHA-256
+fingerprint. Polls and command replies omit it; every update must match the
+handshake fingerprint. Clients apply all mutable runtime fields against their
+retained validated content.
+
+== Checkpoint recovery
+
+`CYTOVILLE_CHECKPOINT_DIR` selects the private checkpoint directory (default:
+`server/data`). Checkpoints include resume credentials; the directory uses mode
+0700 and files 0600 on POSIX. Writes are synchronized then atomically renamed
+before successful transitions are acknowledged. Keep this directory on a local
+filesystem and preserve it when restarting the service. Resume restores the
+session through the Rust validator, including content, trace and native memory.
+Sessions expire after inactivity; expired checkpoints cannot be resumed.
+The directory is initialized only at startup. Existing directories must already
+be private and dedicated to Cytoville records; their permissions are not changed.
+Removing the store while running causes requests to fail rather than recreating it.
+
+The runtime retains the complete causal trace within a 100,000-event budget and
+a 1,000,000-native-tick budget, also subject to the 8 MiB transport limit. Capacity
+errors reject transitions atomically and preserve the last acknowledged state for
+export. Scenario turn limits do not override these resource budgets; unbounded
+history archival and continuation are outside this release's protocol.
+
+This is a single-host store, not distributed consensus. Backups, encrypted public
+ingress, disk quotas and deployment-specific crash/power-loss certification are
+release work. Network integration tests are headless and do not certify UI input.

@@ -2,6 +2,7 @@
 import Config
 
 config :cytoville_server,
+  checkpoint_dir: System.get_env("CYTOVILLE_CHECKPOINT_DIR", Path.expand("../data", __DIR__)),
   port:
     if(config_env() == :test,
       do: 0,

@@ -11,7 +11,7 @@ contract, Elixir two-player server and UMS package adapter form the native path.
 * Expand Creusot coverage from resource primitives to full command invariants.
 * Certify Windows/macOS packaging and a reproducible game/proof build image.
 * Finish visual and sound parity with the browser prototype and accessibility.
-* Add durable multiplayer storage and production encrypted ingress.
+* Certify checkpoint backups, disk quotas and production encrypted ingress.
 * Playtest rival strategy and scenario balance with humans.
 * Build the dedicated UMS graphical city/cell editor over the executable profile.
 

@@ -1,0 +1,78 @@
+= Cytoville end-to-end integration receipt
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+== Scope
+
+Bevy now consumes the complete validated authoritative runtime, including Enaction
+traces and Evil Weevil memory. Reconnects validate the snapshot and reject content
+changes. Accepted human commands enter the causal trace, so two-human sessions
+produce evidence even while the native rival is disabled.
+
+Elixir offers both human multiplayer and server-hosted native-rival sessions.
+Atomic, synchronized private checkpoints retain credentials, content, game state,
+trace and native memory. Resume restores a stopped session or restarted service
+through the Rust load validator. Expiry messages carry a lease to prevent an old
+timer expiring a recently active session.
+
+== Executed validation
+
+* Rust core/runtime/UMS tests passed (11 integration tests).
+* Real TCP Elixir tests passed (2 tests): authentication, turn ownership, stale
+  revision rejection, reconnection, killed session recovery and full service
+  restart with native memory/trace equality.
+* UMS end-to-end test passed: edit specimen name, compile real profile package,
+  load via Elixir's Rust worker, connect with the Bevy transport, alternate human
+  turns, resume a seat and execute the real Zig rival in a hosted solo session.
+* Workspace Clippy passed with warnings denied.
+* Idris2 generator, Zig tests and C ABI harness passed in the initial integration
+  check; no ABI files changed in this work.
+* RSR validator and repository actions-lock validator passed.
+* Current metadatastician/standards actions-lock validator at
+  abf0b78f72cf6f6867456ee9426b6d00a326cd43 passed with yq 4.54.1.
+
+The repeatable entry point is `bash scripts/cytoville-check.sh`; the cross-stack
+scenario can be run separately with `bash scripts/cytoville-e2e.sh`.
+
+== Limits
+
+Create, join and resume handshakes carry immutable content once, inside `runtime`,
+with its canonical SHA-256 `contentId`. Subsequent network state polls and command
+acknowledgements carry game, native memory, tick and complete trace plus that
+fingerprint. Bevy retains the validated content and rejects mismatched fingerprints
+or changed content on resume. Checkpoints and private worker responses remain
+self-contained. The worker checks the
+serialized response against the 8 MiB transport limit, reserving 1 KiB for the
+host's credential envelope, before committing a state transition. A session
+whose response would exceed that bound rejects the transition without an
+acknowledgement or mutation.
+
+Dormant recovery checks the join/resume credential before starting a worker.
+Restoring a checkpoint preserves its stored expiry until authentication succeeds.
+Accepted commands and seat changes are checkpointed immediately. Idle polling
+refreshes the in-memory lease and checkpoints the lease at most once per
+`min(30 seconds, TTL / 4)`. After a crash, the durable inactivity deadline can
+therefore be earlier than the latest poll by up to that interval. Startup removes
+expired or invalid checkpoints and interrupted temporary writes; loading an
+expired checkpoint also deletes it.
+
+Checkpoint storage is initialized once at application startup. New stores are
+private (0700); an existing store must already be private and contain only
+Cytoville checkpoint filenames. Startup refuses other operator directories without
+changing their permissions. Ordinary requests never recreate a removed store.
+
+Sessions have explicit resource ceilings: 100,000 trace events, 1,000,000 native
+ticks and the transport byte budget above. These budgets are independent of a
+scenario's turn limit. At capacity, a command fails with an explicit capacity
+error and leaves the last acknowledged state and full causal history unchanged
+and serializable for export. The boundary regression accepts event 100,000 and
+rejects the next transition atomically. History is never silently pruned.
+Continuation beyond these budgets requires a separately designed archival protocol;
+this release provides bounded sessions, not unlimited-duration matches.
+
+Tests exercise Bevy's real networking code headlessly, not graphical input.
+The checkpoint store is single-host and has not been certified for power loss,
+network filesystems or distributed operation. Public encrypted ingress, backup
+policy and disk quotas remain deployment work. Existing Creusot proof coverage
+is unchanged; these integration changes are tested, not newly formally proven.
+No new release archive was produced. Existing organisation Actions allowlist
+restrictions are unchanged. Hosted CI results are separate from local evidence.
