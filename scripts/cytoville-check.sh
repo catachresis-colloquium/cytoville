@@ -12,7 +12,7 @@ cc -std=c11 -Wall -Wextra -Werror src/interface/ffi/test/api_test.c "$native_dir
 "$native_dir/api-test"
 cargo fmt --all --check
 cargo test --locked
-cargo check -p cytoville-bevy --locked
+cargo test -p cytoville-bevy --locked
 cargo build -p cytoville-runtime --locked
 worker="$(cargo metadata --format-version 1 --no-deps | jq -r .target_directory)/debug/cytoville-server"
 (cd server && mix format --check-formatted && CYTOVILLE_WORKER="$worker" mix test)

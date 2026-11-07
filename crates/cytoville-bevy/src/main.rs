@@ -420,10 +420,10 @@ fn network_updates(mut s: ResMut<Session>) {
     for update in updates {
         match update {
             Ok(runtime) => {
-                if runtime.game != s.runtime.game {
-                    s.runtime = runtime;
-                    s.dirty = true;
-                }
+                s.dirty |= runtime.game != s.runtime.game;
+                // The authoritative trace and native memory can change even
+                // when the visible game state stays the same.
+                s.runtime = runtime;
             }
             Err(error) => {
                 s.message = error;
@@ -514,5 +514,62 @@ fn capture(mut commands: Commands, mut c: ResMut<Capture>) {
         commands
             .spawn(bevy::render::view::screenshot::Screenshot::primary_window())
             .observe(bevy::render::view::screenshot::save_to_disk(path));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::{Mutex, mpsc};
+
+    #[test]
+    fn network_updates_keep_native_state_when_game_is_unchanged() {
+        let runtime = Runtime::new(
+            Content::builtin(),
+            "euglena",
+            "fresh-daughter",
+            "standard",
+            7,
+            false,
+        )
+        .unwrap();
+        let mut remote = runtime.clone();
+        remote.ai_tick = 7;
+        remote.memory.rng_state = 123;
+        remote.validate().unwrap();
+        let expected = serde_json::to_value(&remote).unwrap();
+        let (events, receive) = mpsc::channel();
+        let (send, _commands) = mpsc::channel();
+        events.send(Ok(remote)).unwrap();
+        let mut app = App::new();
+        app.insert_resource(Session {
+            runtime,
+            network: Some(network::Network {
+                send,
+                receive: Mutex::new(receive),
+                seat: 0,
+                invitation: String::new(),
+                resume: serde_json::Value::Null,
+            }),
+            menu: false,
+            dirty: false,
+            specimen: 0,
+            scenario: 0,
+            difficulty: 1,
+            seed: 7,
+            page: 0,
+            message: String::new(),
+            save: PathBuf::new(),
+            clock: FixedStep::from_hz(30.0),
+            visual_phase: 0.0,
+            smoke_until: None,
+            name_edit: None,
+            inspect: false,
+        });
+        app.add_systems(Update, network_updates);
+        app.update();
+        let session = app.world().resource::<Session>();
+        assert_eq!(serde_json::to_value(&session.runtime).unwrap(), expected);
+        assert!(!session.dirty, "unchanged game needs no redraw");
     }
 }
