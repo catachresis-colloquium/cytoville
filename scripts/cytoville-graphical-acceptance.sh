@@ -11,6 +11,8 @@ out="$(realpath "$out")"
 cargo build -p cytoville-bevy -p cytoville-runtime --locked
 target="$(cargo metadata --format-version 1 --no-deps | jq -r .target_directory)"
 scratch="$(mktemp -d)"
+export XDG_RUNTIME_DIR="$scratch/xdg"
+mkdir -m 700 "$XDG_RUNTIME_DIR"
 game_pid="" server_pid=""
 cleanup() {
   for pid in "$game_pid" "$server_pid"; do
@@ -31,7 +33,12 @@ wait_for() {
 launch() {
   "$target/debug/cytoville-bevy" --seed 7 --smoke-seconds 600 "$@" > "$scratch/game.log" 2>&1 &
   game_pid=$!
-  wait_for 'Bevy window' xdotool search --pid "$game_pid" --name '^CYTOVILLE'
+  if ! wait_for 'Bevy window' xdotool search --pid "$game_pid" --name '^CYTOVILLE'; then
+    # Startup stderr has no private ticket/checkpoint contents. Surface it so
+    # missing renderer or window-system prerequisites cannot become opaque.
+    tail -60 "$scratch/game.log" >&2
+    return 1
+  fi
   window="$(xdotool search --pid "$game_pid" --name '^CYTOVILLE' | head -1)"
   xdotool windowfocus --sync "$window"
   sleep 2
