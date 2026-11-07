@@ -99,7 +99,7 @@ defmodule Cytoville.Listener do
 
   defp route(%{"op" => op, "session" => id, "key" => key}, nil)
        when op in ["join", "resume"] and is_binary(id) and is_binary(key) do
-    case Cytoville.Session.lookup(id) do
+    case Cytoville.Session.lookup(id, {if(op == "join", do: :join, else: :resume), key}) do
       {:ok, pid} ->
         authenticate(
           Cytoville.Session.call(pid, {if(op == "join", do: :join, else: :resume), key}),

@@ -39,6 +39,10 @@ defmodule Cytoville.MultiplayerTest do
 
     assert created["ok"]
 
+    {:ok, checkpoint} = Cytoville.Checkpoint.load(id)
+    for _ <- 1..3, do: assert(request(host, %{"op" => "state"})["ok"])
+    assert Cytoville.Checkpoint.load(id) == {:ok, checkpoint}
+
     next =
       request(host, %{
         "op" => "command",
@@ -51,6 +55,13 @@ defmodule Cytoville.MultiplayerTest do
     refute Enum.empty?(next["data"]["runtime"]["trace"]["events"])
     :ok = Application.stop(:cytoville_server)
     {:ok, _} = Application.ensure_all_started(:cytoville_server)
+
+    {:ok, dormant} = Cytoville.Checkpoint.load(id)
+    invalid = socket()
+    refute request(invalid, %{"op" => "resume", "session" => id, "key" => "wrong"})["ok"]
+    assert Registry.lookup(Cytoville.Registry, id) == []
+    assert Cytoville.Checkpoint.load(id) == {:ok, dormant}
+    :gen_tcp.close(invalid)
 
     resumed = socket()
 
@@ -70,6 +81,23 @@ defmodule Cytoville.MultiplayerTest do
     Enum.each([host, resumed, rejected], &:gen_tcp.close/1)
   end
 
+  test "expired checkpoints and interrupted writes are removed after downtime" do
+    root = Application.fetch_env!(:cytoville_server, :checkpoint_dir)
+    id = "expired-#{System.unique_integer([:positive])}"
+    file = Path.join(root, Base.encode16(:crypto.hash(:sha256, id), case: :lower) <> ".json")
+    record = :json.encode(%{"id" => id, "expires" => 0, "tokens" => %{"0" => "secret"}})
+    File.mkdir_p!(root)
+    File.write!(file, record)
+    assert {:error, _} = Cytoville.Checkpoint.load(id)
+    refute File.exists?(file)
+    File.write!(file, record)
+    File.write!(file <> ".tmp", record)
+    :ok = Application.stop(:cytoville_server)
+    {:ok, _} = Application.ensure_all_started(:cytoville_server)
+    refute File.exists?(file)
+    refute File.exists?(file <> ".tmp")
+  end
+
   test "two real clients share Rust truth, enforce seats, reject replay, and reconnect" do
     host = socket()
     id = "test-#{System.unique_integer([:positive])}"
@@ -85,7 +113,7 @@ defmodule Cytoville.MultiplayerTest do
       })
 
     assert created["ok"]
-    assert map_size(created["data"]["data"]["content"]["SPECIMENS"]) == 7
+    assert map_size(created["data"]["data"]["runtime"]["content"]["SPECIMENS"]) == 7
     guest = socket()
     refute request(guest, %{"op" => "join", "session" => id, "key" => "wrong"})["ok"]
 
@@ -104,10 +132,10 @@ defmodule Cytoville.MultiplayerTest do
     refute request(guest, end_turn)["ok"]
     advanced = request(host, end_turn)
     assert advanced["ok"]
-    assert advanced["data"]["game"]["active"] == 1
+    assert advanced["data"]["runtime"]["game"]["active"] == 1
     refute request(host, end_turn)["ok"]
     state = request(guest, %{"op" => "state"})
-    assert state["data"]["game"] == advanced["data"]["game"]
+    assert state["data"]["runtime"]["game"] == advanced["data"]["runtime"]["game"]
     :gen_tcp.close(guest)
     resumed = socket()
 
@@ -119,9 +147,12 @@ defmodule Cytoville.MultiplayerTest do
 
     next = request(resumed, %{end_turn | "expected_revision" => 1})
     assert next["ok"]
-    assert next["data"]["game"]["turn"] == 2
-    assert request(host, %{"op" => "state"})["data"]["game"] == next["data"]["game"]
-    {:ok, pid} = Cytoville.Session.lookup(id)
+    assert next["data"]["runtime"]["game"]["turn"] == 2
+
+    assert request(host, %{"op" => "state"})["data"]["runtime"]["game"] ==
+             next["data"]["runtime"]["game"]
+
+    {:ok, pid} = Cytoville.Session.lookup(id, {:resume, created["data"]["resumeKey"]})
     monitor = Process.monitor(pid)
     Process.exit(pid, :kill)
     assert_receive {:DOWN, ^monitor, :process, ^pid, :killed}

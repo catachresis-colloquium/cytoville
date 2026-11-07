@@ -35,6 +35,21 @@ scenario can be run separately with `bash scripts/cytoville-e2e.sh`.
 
 == Limits
 
+Runtime responses carry content once, inside `runtime`. The worker checks the
+serialized response against the 8 MiB transport limit, reserving 1 KiB for the
+host's credential envelope, before committing a state transition. A session
+whose response would exceed that bound rejects the transition without an
+acknowledgement or mutation.
+
+Dormant recovery checks the join/resume credential before starting a worker.
+Restoring a checkpoint preserves its stored expiry until authentication succeeds.
+Accepted commands and seat changes are checkpointed immediately. Idle polling
+refreshes the in-memory lease and checkpoints the lease at most once per
+`min(30 seconds, TTL / 4)`. After a crash, the durable inactivity deadline can
+therefore be earlier than the latest poll by up to that interval. Startup removes
+expired or invalid checkpoints and interrupted temporary writes; loading an
+expired checkpoint also deletes it.
+
 Tests exercise Bevy's real networking code headlessly, not graphical input.
 The checkpoint store is single-host and has not been certified for power loss,
 network filesystems or distributed operation. Public encrypted ingress, backup

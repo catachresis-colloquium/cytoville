@@ -10,13 +10,14 @@ defmodule Cytoville.Session do
 
   def call(pid, message), do: GenServer.call(pid, message, 15_000)
 
-  def lookup(id) do
+  def lookup(id, credential) do
     case Registry.lookup(Cytoville.Registry, id) do
       [{pid, _}] ->
         {:ok, pid}
 
       _ ->
-        with {:ok, record} <- Cytoville.Checkpoint.load(id) do
+        with {:ok, record} <- Cytoville.Checkpoint.load(id),
+             true <- recoverable?(record, credential) do
           case DynamicSupervisor.start_child(
                  Cytoville.Sessions,
                  {__MODULE__, {id, {:restore, record}}}
@@ -25,6 +26,9 @@ defmodule Cytoville.Session do
             {:error, {:already_started, pid}} -> {:ok, pid}
             _ -> {:error, "Session recovery failed"}
           end
+        else
+          false -> {:error, "Invalid recovery credential"}
+          error -> error
         end
     end
   end
@@ -51,7 +55,14 @@ defmodule Cytoville.Session do
     case worker(port, request) do
       {:ok, data} ->
         lease = make_ref()
-        timer = Process.send_after(self(), {:expire, lease}, ttl())
+
+        remaining =
+          case config do
+            {:restore, record} -> max(1, record["expires"] - System.system_time(:millisecond))
+            _ -> ttl()
+          end
+
+        timer = Process.send_after(self(), {:expire, lease}, remaining)
 
         fresh = %{
           id: id,
@@ -61,7 +72,8 @@ defmodule Cytoville.Session do
           invite: token(),
           tokens: %{0 => token()},
           joined: false,
-          timer: timer
+          timer: timer,
+          checkpointed_at: System.monotonic_time(:millisecond)
         }
 
         state =
@@ -78,7 +90,10 @@ defmodule Cytoville.Session do
               fresh
           end
 
-        {:ok, Cytoville.Checkpoint.save(state)}
+        case config do
+          {:restore, _} -> {:ok, state}
+          _ -> {:ok, Cytoville.Checkpoint.save(state)}
+        end
 
       {:error, reason} ->
         {:stop, reason}
@@ -92,14 +107,15 @@ defmodule Cytoville.Session do
       %{
         "seat" => 0,
         "resumeKey" => state.tokens[0],
-        "inviteKey" => if(state.data["game"]["multiplayer"], do: state.invite, else: nil),
+        "inviteKey" =>
+          if(state.data["runtime"]["game"]["multiplayer"], do: state.invite, else: nil),
         "data" => state.data
       }}, state}
   end
 
   def handle_call({:join, invite}, _from, state) do
     cond do
-      state.joined or not state.data["game"]["multiplayer"] ->
+      state.joined or not state.data["runtime"]["game"]["multiplayer"] ->
         {:reply, {:error, "Both seats are occupied; use your resume key"}, state}
 
       invite != state.invite ->
@@ -124,7 +140,7 @@ defmodule Cytoville.Session do
 
   def handle_call({:state, key}, _from, state) do
     if authorized?(state, key),
-      do: {:reply, {:ok, state.data}, touch(state)},
+      do: {:reply, {:ok, state.data}, touch(state, false)},
       else: {:reply, {:error, "Unauthorized"}, state}
   end
 
@@ -134,7 +150,7 @@ defmodule Cytoville.Session do
         {:reply, {:error, "Unauthorized"}, state}
 
       {seat, _} ->
-        if not state.joined and state.data["game"]["multiplayer"] do
+        if not state.joined and state.data["runtime"]["game"]["multiplayer"] do
           {:reply, {:error, "Wait for the second cell to join"}, state}
         else
           # The connection cannot supply its seat. Rust checks the active seat,
@@ -172,18 +188,31 @@ defmodule Cytoville.Session do
   end
 
   defp authorized?(state, key), do: key != nil and key in Map.values(state.tokens)
+  defp recoverable?(record, {:resume, key}), do: key in Map.values(record["tokens"])
+
+  defp recoverable?(record, {:join, key}),
+    do: not record["joined"] and key == record["invite"] and key != nil
+
   defp token, do: Base.url_encode64(:crypto.strong_rand_bytes(24), padding: false)
   defp ttl, do: Application.fetch_env!(:cytoville_server, :session_ttl_ms)
 
-  defp touch(state) do
+  defp touch(state, durable \\ true) do
     Process.cancel_timer(state.timer)
     lease = make_ref()
 
-    Cytoville.Checkpoint.save(%{
+    next = %{
       state
       | lease: lease,
         timer: Process.send_after(self(), {:expire, lease}, ttl())
-    })
+    }
+
+    now = System.monotonic_time(:millisecond)
+
+    if durable or now - state.checkpointed_at >= min(30_000, max(1, div(ttl(), 4))) do
+      Cytoville.Checkpoint.save(%{next | checkpointed_at: now})
+    else
+      next
+    end
   end
 
   defp worker(port, request) do

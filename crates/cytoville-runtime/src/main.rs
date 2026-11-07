@@ -35,6 +35,25 @@ fn respond(
     runtime: &mut Option<Runtime>,
     content: &mut Content,
 ) -> Result<Value, String> {
+    // Reserve space for the host's join/resume envelope inside its 8 MiB
+    // transport limit. A transition is acknowledged only if it can be sent.
+    let mut next_runtime = runtime.clone();
+    let mut next_content = content.clone();
+    let value = respond_inner(r, &mut next_runtime, &mut next_content)?;
+    let bytes = serde_json::to_vec(&json!({"ok":true,"data":&value})).map_err(|e| e.to_string())?;
+    if bytes.len() > 8 * 1024 * 1024 - 1024 {
+        return Err("Session response exceeds transport limit".into());
+    }
+    *runtime = next_runtime;
+    *content = next_content;
+    Ok(value)
+}
+
+fn respond_inner(
+    r: Request,
+    runtime: &mut Option<Runtime>,
+    content: &mut Content,
+) -> Result<Value, String> {
     match r {
         Request::New {
             specimen,
@@ -80,8 +99,42 @@ fn respond(
     }
     let rt = runtime.as_ref().ok_or("No game")?;
     Ok(
-        json!({"game":rt.game,"content":rt.content,"runtime":rt,"actions":actions::list(&rt.content,&rt.game,rt.game.active,&rt.game.actors[rt.game.active].location),"nativeDecisions":rt.ai_tick}),
+        json!({"runtime":rt,"actions":actions::list(&rt.content,&rt.game,rt.game.active,&rt.game.actors[rt.game.active].location),"nativeDecisions":rt.ai_tick}),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn new_game() -> Request {
+        Request::New {
+            specimen: "euglena".into(),
+            scenario: "fresh-daughter".into(),
+            difficulty: "standard".into(),
+            seed: 7,
+            multiplayer: true,
+        }
+    }
+
+    #[test]
+    fn large_valid_content_is_sent_once_and_oversized_transitions_are_atomic() {
+        let mut content = Content::builtin();
+        content.specimens.get_mut("euglena").unwrap().name = "x".repeat(5 * 1024 * 1024);
+        content.validate().unwrap();
+        let mut runtime = None;
+        let reply = respond(new_game(), &mut runtime, &mut content).unwrap();
+        assert!(reply.get("content").is_none());
+        assert!(reply.get("game").is_none());
+        assert!(serde_json::to_vec(&reply).unwrap().len() < 8 * 1024 * 1024 - 1024);
+        let previous = serde_json::to_value(&runtime).unwrap();
+        content.specimens.get_mut("euglena").unwrap().name = "x".repeat(8 * 1024 * 1024);
+        assert_eq!(
+            respond(new_game(), &mut runtime, &mut content).unwrap_err(),
+            "Session response exceeds transport limit"
+        );
+        assert_eq!(serde_json::to_value(&runtime).unwrap(), previous);
+    }
 }
 fn main() {
     let mut runtime = None;

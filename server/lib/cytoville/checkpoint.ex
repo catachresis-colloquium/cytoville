@@ -1,12 +1,15 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 defmodule Cytoville.Checkpoint do
   @moduledoc "Private, atomic session checkpoints, including native memory and resume credentials."
-  defp path(id) do
+  defp root do
     root = Application.fetch_env!(:cytoville_server, :checkpoint_dir)
     File.mkdir_p!(root)
     File.chmod!(root, 0o700)
-    Path.join(root, Base.encode16(:crypto.hash(:sha256, id), case: :lower) <> ".json")
+    root
   end
+
+  defp path(id),
+    do: Path.join(root(), Base.encode16(:crypto.hash(:sha256, id), case: :lower) <> ".json")
 
   def save(state) do
     destination = path(state.id)
@@ -40,13 +43,40 @@ defmodule Cytoville.Checkpoint do
   def load(id) do
     with {:ok, bytes} <- File.read(path(id)),
          record <- :json.decode(bytes),
-         true <- record["id"] == id and record["expires"] > System.system_time(:millisecond) do
-      {:ok, record}
+         true <- record["id"] == id and is_integer(record["expires"]) do
+      if record["expires"] > System.system_time(:millisecond) do
+        {:ok, record}
+      else
+        delete(id)
+        {:error, "Unknown or expired session"}
+      end
     else
       _ -> {:error, "Unknown or expired session"}
     end
   rescue
     _ -> {:error, "Invalid session checkpoint"}
+  end
+
+  def prune_expired do
+    for file <- Path.wildcard(Path.join(root(), "*.json")) do
+      if expired_file?(file), do: File.rm(file)
+    end
+
+    # No session writer exists during application startup. Interrupted writes
+    # contain resume credentials too, and are never a recoverable checkpoint.
+    for file <- Path.wildcard(Path.join(root(), "*.json.tmp")), do: File.rm(file)
+    :ok
+  end
+
+  defp expired_file?(file) do
+    with {:ok, bytes} <- File.read(file),
+         %{"expires" => expires} when is_integer(expires) <- :json.decode(bytes) do
+      expires <= System.system_time(:millisecond)
+    else
+      _ -> true
+    end
+  rescue
+    _ -> true
   end
 
   def delete(id), do: File.rm(path(id))

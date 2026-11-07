@@ -3,6 +3,8 @@ defmodule Cytoville.Application do
   use Application
 
   def start(_type, _args) do
+    Cytoville.Checkpoint.prune_expired()
+
     children = [
       {Registry, keys: :unique, name: Cytoville.Registry},
       {DynamicSupervisor, strategy: :one_for_one, name: Cytoville.Sessions, max_children: 64},
