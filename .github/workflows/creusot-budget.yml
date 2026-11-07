@@ -15,8 +15,8 @@ jobs:
     uses: hyperpolymath/cicd-suite/.github/workflows/creusot-gate.yml@faba7124aee223098d33497bdadc96e111829752
     with:
       working_directory: crates/cytoville-budget
-      creusot_version: "0.13.0"
-      rust_nightly: "nightly-2026-06-22"
+      creusot_version: "0.14.0"
+      rust_nightly: "nightly-2026-08-03"
       enforce_hollow: true
 # Provisioning deviation: the shared gate installs the pinned upstream proof
 # tools outside Guix. Scope and closure are recorded in PROOF-STATUS.adoc.
