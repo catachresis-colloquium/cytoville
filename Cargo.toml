@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 [workspace]
 resolver = "3"
+# The pinned CI tool checkout is an independent Cargo project, not game code.
+exclude = [".cicd-suite/actions/creusot-check/source-facts"]
 members = ["crates/cytoville-budget", "crates/cytoville-core", "crates/cytoville-native", "crates/cytoville-runtime", "crates/cytoville-bevy", "crates/cytoville-ums"]
 default-members = ["crates/cytoville-core", "crates/cytoville-native", "crates/cytoville-runtime", "crates/cytoville-ums"]
 
@@ -17,7 +19,6 @@ default-members = ["cytoville-budget"]
 [workspace.dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_json = { version = "1", features = ["float_roundtrip"] }
-creusot-std = "=0.13.0"
 cytoville-core = { path = "crates/cytoville-core" }
 cytoville-native = { path = "crates/cytoville-native" }
 cytoville-runtime = { path = "crates/cytoville-runtime" }
