@@ -10,13 +10,19 @@ contract, Elixir two-player server and UMS package adapter form the native path.
 
 * Establish a frame-time and input-latency baseline on the target machine in a
   release build; profile rendering, UI rebuilds, native turns and networking.
-  Idle rename redraws and layout-changing pulse animation have been corrected,
-  but no measured overall speed improvement is claimed yet.
-* Give the city and cells a coherent visual identity: distinct living districts,
-  organism motion, readable action feedback and sound. The current sparse map
-  remains an engineering alpha and has not met the owner's visual expectations.
-* Adopt and validate the shared Creusot singleton-report correction (#92 in
-  cicd-suite); current proof CI stops before caller verification.
+  Idle rename redraws, layout-changing pulse animation and repeated portrait
+  rasterisation have been corrected. Bounded debug/software-renderer samples
+  are recorded in docs/verification/PERFORMANCE.adoc; hardware release and
+  end-to-end input measurements remain open.
+* Continue the city's visual identity and game feel. The native map now has
+  illustrated district landmarks, curved paths, ambient particles and moving
+  player/rival markers. It remains an engineering alpha; richer organism
+  animation, sound acceptance, readability at other sizes and human art/game-feel
+  acceptance are unfinished.
+* Retain the allowed compatible Creusot backport until any later suite adoption
+  is separately validated. The canonical parser correction (#92 in cicd-suite)
+  is merged; Cytoville's backport passed hosted run 42365155854. Those receipts
+  cover one caller repository and its three selected resource functions.
 * Expand Creusot coverage from resource primitives to full command invariants.
 * Certify Windows/macOS packaging and a reproducible game/proof build image.
 * Finish visual and sound parity with the browser prototype and accessibility.

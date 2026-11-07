@@ -1,0 +1,60 @@
+= Native presentation performance
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+== Measurement boundary
+
+The native client accepts `--profile /absolute/path/timings.json` and writes a
+bounded receipt on normal exit. It collects at most 6,000 samples per metric.
+`screen_rebuild_cpu_ms` measures CPU construction of the UI command tree; it
+does not include deferred ECS application, layout, GPU execution or display
+latency. `frame_interval_ms` measures successive application updates after
+120 warm-up frames. `command_and_autosave_ms` measures local dispatch/save or
+network submission, not a remote server's response time.
+The median averages the two middle values for even sample counts. The p95
+uses nearest rank (`ceil(0.95 * count)`, one-based). A collection failure
+refuses the receipt rather than terminating gameplay or reporting partial data.
+
+No timing is collected without the opt-in flag. Receipts contain numerical
+summaries only, with no game state, invitation keys or connection tickets.
+
+== Reproduce
+
+In a private X11 display (or `xvfb-run`), set `CYTOVILLE_PROFILE_OUTPUT` and run
+`bash scripts/cytoville-profile.sh`. The default builds the release client.
+`CYTOVILLE_PROFILE_BINARY` may select an existing build; record its profile.
+The sample opens an offline seed-7 game and issues 20 real F5 inputs before
+exiting normally. It does not start a multiplayer listener.
+
+For a native Windows build, launch the executable with `--play --profile
+timings.json --smoke-seconds 35`. A passive run measures frame intervals only;
+it must not be presented as equivalent to the 20-input redraw sample.
+
+== Initial local comparison, 2026-11-07
+
+Same 1440x960 isolated X11 display, Linux debug build, llvmpipe software Vulkan,
+seed 7, 20 save inputs. Each run recorded 21 screen constructions. These are
+single-run observations, not a controlled multi-run hardware benchmark.
+
+[cols="3,1,1,1",options="header"]
+|===
+|Build |Median screen construction (ms) |Upper-middle frame interval (ms) |p95 frame interval (ms)
+|Before portrait caching |18.365 |38.937 |65.982
+|Portrait cache only |0.143 |31.646 |38.085
+|Cache plus illustrated city |0.195 |33.329 |42.899
+|===
+
+These initial receipts predate the even-sample median correction: their frame
+column records the upper middle order statistic, not the average of the two
+middle values. The screen-construction samples have odd counts. Historical
+receipts are retained as observed, not silently relabelled or recalculated
+without their raw samples.
+
+The illustrated city's cold first construction took 173.978 ms in this debug
+sample; subsequent redraws reused its image. The cache retains at most two
+current cell appearances and one city image. It invalidates cell images when
+specimen, phase, expressed organelles, membrane, accent or pattern changes;
+travel, resource values and names do not rerasterize them. City content changes
+invalidate the cached map. Animation changes transforms, not layout dimensions.
+
+Release measurements on a hardware adapter, repeated-run variance, end-to-end
+input latency and turn/network profiling remain separate acceptance work.

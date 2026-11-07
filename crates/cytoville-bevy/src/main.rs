@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
+use bevy::picking::Pickable;
 use bevy::prelude::*;
 use bevy::ui_widgets::{Activate, Button};
 use cytoville_bevy::network;
@@ -6,6 +7,8 @@ use cytoville_core::{Command as GameCommand, Content, actions, rules, turn};
 use cytoville_runtime::Runtime;
 use enaction_time::FixedStep;
 use std::{path::PathBuf, time::Instant};
+mod city;
+mod performance;
 mod portrait;
 mod soundtrack;
 const BG: Color = Color::srgb(0.025, 0.055, 0.075);
@@ -102,6 +105,10 @@ fn button(action: Click, enabled: bool) -> impl Bundle {
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let arg = |key: &str| args.windows(2).find(|a| a[0] == key).map(|a| a[1].clone());
+    let profile = arg("--profile").map(PathBuf::from);
+    if profile.is_some() {
+        performance::enable();
+    }
     let seed = arg("--seed").and_then(|s| s.parse().ok()).unwrap_or(7);
     let mut content = Content::builtin();
     if let Some(path) = arg("--package") {
@@ -177,6 +184,9 @@ fn main() {
         ..default()
     }))
     .insert_resource(ClearColor(BG))
+    .init_resource::<portrait::Cache>()
+    .init_resource::<city::Artwork>()
+    .init_resource::<city::Motion>()
     .insert_resource(Session {
         runtime,
         network,
@@ -213,10 +223,25 @@ fn main() {
     .add_observer(interact)
     .add_systems(
         Update,
-        (keyboard, network_updates, render, animate, capture).chain(),
+        (
+            keyboard,
+            network_updates,
+            render,
+            animate,
+            city::animate,
+            capture,
+        )
+            .chain(),
     );
     soundtrack::install(&mut app);
+    app.add_systems(First, performance::frame);
     app.run();
+    if let Some(path) = profile
+        && let Err(error) = performance::write(&path)
+    {
+        eprintln!("Cannot write performance receipt: {error}");
+        std::process::exit(1);
+    }
 }
 fn save_ticket(path: &str, ticket: &serde_json::Value) -> std::io::Result<()> {
     use std::io::Write;
@@ -253,6 +278,7 @@ fn load(s: &mut Session) -> Result<(), String> {
     Ok(())
 }
 fn command(s: &mut Session, cmd: GameCommand) {
+    let _timing = performance::Span::new("command_and_autosave_ms");
     let result = if let Some(net) = &s.network {
         net.command(s.runtime.game.revision, &cmd)
     } else {
@@ -444,10 +470,13 @@ fn render(
     mut s: ResMut<Session>,
     screens: Query<Entity, With<Screen>>,
     mut images: ResMut<Assets<Image>>,
+    mut portraits: ResMut<portrait::Cache>,
+    mut artwork: ResMut<city::Artwork>,
 ) {
     if !s.dirty {
         return;
     }
+    let _timing = performance::Span::new("screen_rebuild_cpu_ms");
     s.dirty = false;
     for entity in &screens {
         commands.entity(entity).despawn();
@@ -456,7 +485,14 @@ fn render(
     let g = &s.runtime.game;
     let seat = s.network.as_ref().map(|n| n.seat).unwrap_or(0);
     let a = &g.actors[seat];
-    let portrait = images.add(portrait::image(a, &g.looks[seat]));
+    let portrait = portraits.get(seat, a, &g.looks[seat], &mut images);
+    let rival = portraits.get(
+        1 - seat,
+        &g.actors[1 - seat],
+        &g.looks[1 - seat],
+        &mut images,
+    );
+    let city_image = (!s.menu).then(|| artwork.get(c, &mut images));
     commands.spawn((Screen,Node{width:Val::Percent(100.0),height:Val::Percent(100.0),padding:UiRect::all(Val::Px(24.0)),..column()},BackgroundColor(BG))).with_children(|root|{
         root.spawn(Node{align_items:AlignItems::Center,justify_content:JustifyContent::SpaceBetween,..default()}).with_children(|head|{head.spawn(text("CYTOVILLE",32.0,MINT));head.spawn(text("ONE CELL. ONE LIFETIME. A WHOLE CITY.",15.0,INK));if !s.menu{head.spawn(button(Click::Menu,true)).with_child(text("Menu",15.0,INK));head.spawn(button(Click::Save,s.network.is_none())).with_child(text("Save · F5",15.0,INK));}});
         if !s.message.is_empty(){root.spawn(text(s.message.clone(),15.0,Color::srgb(1.0,0.75,0.38)));}
@@ -474,8 +510,18 @@ fn render(
         if g.status!="playing"{root.spawn(text(format!("{} · {}",g.status.to_uppercase(),g.winner.map(|i|format!("{} completed the checklist",g.actors[i].name)).unwrap_or("The biofilm exhausted its nutrients".into())),25.0,MINT));}else if g.active!=seat{root.spawn(text("Waiting for the other cell's turn…",18.0,INK));}
         root.spawn(Node{width:Val::Percent(100.0),flex_grow:1.0,min_height:Val::Px(360.0),column_gap:Val::Px(18.0),..default()}).with_children(|body|{
             body.spawn((Node{width:Val::Percent(56.0),height:Val::Percent(100.0),position_type:PositionType::Relative,..default()},BackgroundColor(PANEL))).with_children(|map|{
+                map.spawn((Pickable::IGNORE,ImageNode::new(city_image.clone().expect("playing city")),Node{position_type:PositionType::Absolute,width:Val::Percent(100.0),height:Val::Percent(100.0),..default()}));
+                for i in 0..12 {
+                    map.spawn((Pickable::IGNORE,city::Bubble(i as f32),UiTransform::default(),Node{position_type:PositionType::Absolute,left:Val::Percent(4.+((i*37)%90) as f32),top:Val::Percent(24.+((i*19)%60) as f32),width:Val::Px(4.+(i%4) as f32*2.),height:Val::Px(4.+(i%4) as f32*2.),border:UiRect::all(Val::Px(1.)),border_radius:BorderRadius::MAX,..default()},BorderColor::all(Color::srgba(0.4,0.8,0.7,0.25))));
+                }
                 map.spawn(Node{position_type:PositionType::Absolute,left:Val::Px(12.0),top:Val::Px(10.0),..default()}).with_child(text("THE BIOFILM METROPOLIS",18.0,MINT));
-                for id in &c.location_order{let l=&c.locations[id];let(x,y)=match id.as_str(){"home"=>(38.,40.),"university"=>(3.,28.),"solar"=>(26.,12.),"checkpoint"=>(49.,28.),"security"=>(73.,12.),"detritus"=>(3.,53.),"boutique"=>(73.,53.),"rift"=>(38.,62.),"gym"=>(6.,75.),"diner"=>(70.,75.),_=>(l.x as f32,l.y as f32)};let cost=rules::travel_cost(c,a,id).unwrap_or(0);map.spawn(button(Click::Game(GameCommand::Travel{location:id.clone()}),cost<=a.atp&&g.active==seat)).insert(Node{position_type:PositionType::Absolute,left:Val::Percent(x),top:Val::Percent(y),padding:UiRect::all(Val::Px(8.0)),width:Val::Percent(23.0),border_radius:BorderRadius::all(Val::Px(8.0)),..default()}).with_child(text(format!("{}{}\n{cost} ATP",if a.location==*id{"◉ "}else{""},l.short),14.0,if a.location==*id{MINT}else{INK}));}
+                for id in &c.location_order{let l=&c.locations[id];let p=city::position(id,c);let cost=rules::travel_cost(c,a,id).unwrap_or(0);map.spawn(button(Click::Game(GameCommand::Travel{location:id.clone()}),cost<=a.atp&&g.active==seat)).insert((Node{position_type:PositionType::Absolute,left:Val::Percent(p.x),top:Val::Percent(p.y),padding:UiRect::all(Val::Px(8.0)),width:Val::Percent(23.0),border_radius:BorderRadius::all(Val::Px(8.0)),..default()},BackgroundColor(if a.location==*id{Color::srgba(0.10,0.29,0.27,0.94)}else{Color::srgba(0.04,0.12,0.16,0.88)}))).with_child(text(format!("{}{}\n{cost} ATP",if a.location==*id{"◉ "}else{""},l.short),14.0,if a.location==*id{MINT}else{INK}));}
+                for (actor,handle,label,color) in [(seat,portrait.clone(),"YOU",MINT),(1-seat,rival.clone(),"RIVAL",Color::srgb(1.,0.66,0.48))] {
+                    map.spawn((Pickable::IGNORE,city::CellMarker(actor),UiTransform::default(),Node{position_type:PositionType::Absolute,width:Val::Percent(100.),height:Val::Percent(100.),..default()})).with_children(|marker|{
+                        marker.spawn((Pickable::IGNORE,ImageNode::new(handle),Node{position_type:PositionType::Absolute,left:Val::Px(-18.),top:Val::Px(-18.),width:Val::Px(36.),height:Val::Px(36.),..default()}));
+                        marker.spawn((Pickable::IGNORE,Node{position_type:PositionType::Absolute,left:Val::Px(-21.),top:Val::Px(15.),padding:UiRect::axes(Val::Px(4.),Val::Px(2.)),border_radius:BorderRadius::all(Val::Px(4.)),..default()},BackgroundColor(BG))).with_child((Pickable::IGNORE,text(label,10.,color)));
+                    });
+                }
                 map.spawn((CellPulse,UiTransform::default(),ImageNode::new(portrait.clone()),Node{position_type:PositionType::Absolute,left:Val::Px(8.0),bottom:Val::Px(4.0),width:Val::Px(130.0),height:Val::Px(130.0),..default()}));
                 map.spawn(Node{position_type:PositionType::Absolute,left:Val::Px(145.0),bottom:Val::Px(18.0),..column()}).with_children(|info|{info.spawn(text(format!("{} · {}",c.specimens[&a.specimen].name,g.looks[seat].pattern),15.0,INK));info.spawn(text(format!("{} organelles · {} stored meals · {}",a.organelles.len(),a.storage_stock,a.phase),14.0,INK));});
             });

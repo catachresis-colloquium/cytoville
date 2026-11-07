@@ -44,3 +44,15 @@ size/DPI and accessibility testing, complete scenario/end-game coverage, two
 simultaneous graphical human clients, and art/sound/game-feel acceptance.
 The separate existing transport suite covers two human clients and rejects
 untrusted certificates and mismatched hostnames; those tests are not graphical.
+
+== Illustrated city regression
+
+The same bounded input journey passed locally after adding the cached native
+city illustration, district paths, animated bubbles and player/rival markers.
+Screenshots confirm the spots phenotype after customisation, the player at
+university after study, and the resumed local TLS game. Decorative entities are
+excluded from picking so they do not intercept gameplay buttons.
+
+The earlier X11 runtime dependency correction passed hosted Rust CI in run
+42363302072, including its graphical/TLS step. That historical hosted result
+does not certify subsequent presentation changes; those require their own CI.
