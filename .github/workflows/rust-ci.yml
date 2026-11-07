@@ -18,13 +18,41 @@ permissions:
   contents: read
 
 jobs:
+  windows-native:
+    name: Windows Rust and Zig runtime boundary
+    runs-on: windows-2025
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Install pinned Windows native tools
+        shell: pwsh
+        run: ./scripts/install-ci-native-windows.ps1
+
+      - name: Exercise the native kernel through Rust on Windows
+        shell: pwsh
+        run: cargo test -p cytoville-runtime --release --test runtime --locked
+
   rust-ci:
     name: Rust standalone tools and workspace gate
+    needs: windows-native
+    if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
       contents: read
     steps:
+      - name: Require Windows native boundary acceptance
+        env:
+          WINDOWS_RESULT: ${{ needs.windows-native.result }}
+        run: test "$WINDOWS_RESULT" = success
+
       - name: Checkout repository
         uses: actions/checkout@v7.0.1
         with:
