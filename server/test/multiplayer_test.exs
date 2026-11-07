@@ -38,9 +38,18 @@ defmodule Cytoville.MultiplayerTest do
       })
 
     assert created["ok"]
+    assert is_binary(created["data"]["data"]["contentId"])
+    assert byte_size(created["data"]["data"]["contentId"]) == 64
 
     {:ok, checkpoint} = Cytoville.Checkpoint.load(id)
-    for _ <- 1..3, do: assert(request(host, %{"op" => "state"})["ok"])
+
+    for _ <- 1..3 do
+      polled = request(host, %{"op" => "state"})
+      assert polled["ok"]
+      refute Map.has_key?(polled["data"]["runtime"], "content")
+      assert polled["data"]["contentId"] == created["data"]["data"]["contentId"]
+    end
+
     assert Cytoville.Checkpoint.load(id) == {:ok, checkpoint}
 
     next =
@@ -69,7 +78,12 @@ defmodule Cytoville.MultiplayerTest do
       request(resumed, %{"op" => "resume", "session" => id, "key" => created["data"]["resumeKey"]})
 
     assert restored["ok"]
-    assert restored["data"]["data"]["runtime"] == next["data"]["runtime"]
+    assert Map.delete(restored["data"]["data"]["runtime"], "content") == next["data"]["runtime"]
+
+    assert restored["data"]["data"]["runtime"]["content"] ==
+             created["data"]["data"]["runtime"]["content"]
+
+    assert restored["data"]["data"]["contentId"] == next["data"]["contentId"]
     rejected = socket()
 
     refute request(rejected, %{
@@ -166,7 +180,12 @@ defmodule Cytoville.MultiplayerTest do
       })
 
     assert recovery["ok"]
-    assert recovery["data"]["data"]["runtime"] == next["data"]["runtime"]
+    assert Map.delete(recovery["data"]["data"]["runtime"], "content") == next["data"]["runtime"]
+
+    assert recovery["data"]["data"]["runtime"]["content"] ==
+             created["data"]["data"]["runtime"]["content"]
+
+    assert recovery["data"]["data"]["contentId"] == next["data"]["contentId"]
     :gen_tcp.close(recovered)
     :gen_tcp.close(host)
     :gen_tcp.close(resumed)

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
-use cytoville_core::Command;
-use cytoville_runtime::Runtime;
+use cytoville_core::{Command, Content};
+use cytoville_runtime::{Runtime, RuntimeState, content_id};
 use serde_json::{Value, json};
 use std::{
     io::{BufRead, BufReader, Read, Write},
@@ -11,7 +11,7 @@ use std::{
 };
 pub struct Network {
     pub send: Sender<Value>,
-    pub receive: std::sync::Mutex<Receiver<Result<Runtime, String>>>,
+    pub receive: std::sync::Mutex<Receiver<Result<RuntimeState, String>>>,
     pub seat: usize,
     pub invitation: String,
     pub resume: Value,
@@ -28,14 +28,14 @@ fn exchange(reader: &mut Reader, request: &Value) -> Result<Value, String> {
     if bytes.len() > 8 * 1024 * 1024 {
         return Err("Oversized server response".into());
     }
-    let reply: Value = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
+    let mut reply: Value = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
     if reply["ok"] != true {
         return Err(reply["error"]
             .as_str()
             .unwrap_or("Server rejected request")
             .into());
     }
-    Ok(reply["data"].clone())
+    Ok(reply["data"].take())
 }
 fn connect(address: &str) -> Result<Reader, String> {
     let tls = address.starts_with("tls://");
@@ -72,7 +72,9 @@ fn connect(address: &str) -> Result<Reader, String> {
             );
         }
         let connector = builder.build().map_err(|e| e.to_string())?;
-        let secured = connector.connect(host, stream).map_err(|e| e.to_string())?;
+        let secured = connector
+            .connect(host, stream)
+            .map_err(|e| format!("TLS handshake failed: {e}"))?;
         Ok(BufReader::new(Box::new(secured)))
     } else {
         Ok(BufReader::new(Box::new(stream)))
@@ -81,8 +83,8 @@ fn connect(address: &str) -> Result<Reader, String> {
 impl Network {
     pub fn start(address: String, request: Value) -> Result<(Self, Runtime), String> {
         let mut reader = connect(&address)?;
-        let joined = exchange(&mut reader, &request)?;
-        let runtime = snapshot(&joined["data"])?;
+        let mut joined = exchange(&mut reader, &request)?;
+        let (runtime, checked_id) = initial_snapshot(joined["data"].take())?;
         let seat = joined["seat"].as_u64().ok_or("Missing server seat")? as usize;
         if seat > 1 {
             return Err("Invalid server seat".into());
@@ -94,7 +96,7 @@ impl Network {
         let invitation = joined["inviteKey"].as_str().unwrap_or("").to_string();
         let resume = json!({"op":"resume","session":request["session"],"key":key});
         let ticket = json!({"server":address,"request":resume});
-        let checked_content = serde_json::to_value(&runtime.content).map_err(|e| e.to_string())?;
+        let checked_content = runtime.content.clone();
         let (send, commands) = mpsc::channel::<Value>();
         let (events, receive) = mpsc::channel();
         thread::spawn(move || {
@@ -104,15 +106,9 @@ impl Network {
                     Err(mpsc::RecvTimeoutError::Timeout) => json!({"op":"state"}),
                     Err(_) => break,
                 };
-                match exchange(&mut reader, &request).and_then(|v| {
-                    let state = snapshot(&v)?;
-                    if serde_json::to_value(&state.content).map_err(|e| e.to_string())?
-                        != checked_content
-                    {
-                        return Err("Server changed session content".into());
-                    }
-                    Ok(state)
-                }) {
+                match exchange(&mut reader, &request)
+                    .and_then(|v| snapshot(v, &checked_content, &checked_id))
+                {
                     Ok(game) => {
                         if events.send(Ok(game)).is_err() {
                             break;
@@ -124,10 +120,9 @@ impl Network {
                         }
                         // Resume the seat, without replaying a command whose ack was lost.
                         if let Ok(mut new_reader) = connect(&address)
-                            && let Ok(v) = exchange(&mut new_reader, &resume)
-                            && let Ok(state) = snapshot(&v["data"])
-                            && serde_json::to_value(&state.content).ok().as_ref()
-                                == Some(&checked_content)
+                            && let Ok(mut v) = exchange(&mut new_reader, &resume)
+                            && let Ok(state) =
+                                snapshot(v["data"].take(), &checked_content, &checked_id)
                         {
                             let _ = events.send(Ok(state));
                             reader = new_reader;
@@ -154,9 +149,65 @@ impl Network {
     }
 }
 
-fn snapshot(data: &Value) -> Result<Runtime, String> {
+fn initial_snapshot(mut data: Value) -> Result<(Runtime, String), String> {
+    let id = data["contentId"]
+        .as_str()
+        .ok_or("Missing content fingerprint")?
+        .to_string();
     let runtime: Runtime =
-        serde_json::from_value(data["runtime"].clone()).map_err(|e| e.to_string())?;
+        serde_json::from_value(data["runtime"].take()).map_err(|e| e.to_string())?;
     runtime.validate()?;
-    Ok(runtime)
+    if content_id(&runtime.content)? != id {
+        return Err("Invalid session content fingerprint".into());
+    }
+    Ok((runtime, id))
+}
+
+fn snapshot(mut data: Value, content: &Content, expected_id: &str) -> Result<RuntimeState, String> {
+    if data["contentId"].as_str() != Some(expected_id) {
+        return Err("Server changed session content".into());
+    }
+    let mut body = data["runtime"].take();
+    if let Some(received) = body
+        .as_object_mut()
+        .ok_or("Missing runtime state")?
+        .remove("content")
+    {
+        let received: Content = serde_json::from_value(received).map_err(|e| e.to_string())?;
+        if content_id(&received)? != expected_id {
+            return Err("Server changed session content".into());
+        }
+    }
+    let state: RuntimeState = serde_json::from_value(body).map_err(|e| e.to_string())?;
+    state.validate(content)?;
+    Ok(state)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn incremental_states_require_the_handshake_content_fingerprint() {
+        let runtime = Runtime::new(
+            Content::builtin(),
+            "euglena",
+            "fresh-daughter",
+            "standard",
+            7,
+            true,
+        )
+        .unwrap();
+        let id = content_id(&runtime.content).unwrap();
+        let thin = json!({"contentId": id, "runtime": runtime.state()});
+        let state = snapshot(thin.clone(), &runtime.content, &id).unwrap();
+        assert_eq!(state.game, runtime.game);
+        assert_eq!(state.trace, runtime.trace);
+        let mut wrong = thin;
+        wrong["contentId"] = json!("wrong");
+        assert!(snapshot(wrong, &runtime.content, &id).is_err());
+        let mut full = json!({"contentId": id, "runtime": runtime});
+        full["runtime"]["content"]["SPECIMENS"]["euglena"]["blurb"] = json!("changed");
+        assert!(snapshot(full, &runtime.content, &id).is_err());
+    }
 }

@@ -1,11 +1,34 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 defmodule Cytoville.Checkpoint do
+  import Bitwise, only: [band: 2]
   @moduledoc "Private, atomic session checkpoints, including native memory and resume credentials."
-  defp root do
-    root = Application.fetch_env!(:cytoville_server, :checkpoint_dir)
-    File.mkdir_p!(root)
-    File.chmod!(root, 0o700)
-    root
+
+  defp root, do: Application.fetch_env!(:cytoville_server, :checkpoint_dir)
+
+  def initialize! do
+    directory = root()
+    File.mkdir_p!(Path.dirname(directory))
+
+    case File.mkdir(directory) do
+      :ok ->
+        File.chmod!(directory, 0o700)
+
+      {:error, :eexist} ->
+        stat = File.lstat!(directory)
+
+        unless stat.type == :directory and band(stat.mode, 0o777) == 0o700 do
+          raise "Checkpoint directory must already be a private directory (0700)"
+        end
+
+        unless Enum.all?(File.ls!(directory), &Regex.match?(~r/\A[0-9a-f]{64}\.json(?:\.tmp)?\z/, &1)) do
+          raise "Checkpoint directory must be dedicated to Cytoville session records"
+        end
+
+      {:error, reason} ->
+        raise File.Error, reason: reason, action: "create checkpoint directory", path: directory
+    end
+
+    :ok
   end
 
   defp path(id),

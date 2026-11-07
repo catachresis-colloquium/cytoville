@@ -3,6 +3,7 @@ defmodule Cytoville.Application do
   use Application
 
   def start(_type, _args) do
+    Cytoville.Checkpoint.initialize!()
     Cytoville.Checkpoint.prune_expired()
 
     children = [

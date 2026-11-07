@@ -140,7 +140,7 @@ defmodule Cytoville.Session do
 
   def handle_call({:state, key}, _from, state) do
     if authorized?(state, key),
-      do: {:reply, {:ok, state.data}, touch(state, false)},
+      do: {:reply, {:ok, client_data(state.data)}, touch(state, false)},
       else: {:reply, {:error, "Unauthorized"}, state}
   end
 
@@ -163,7 +163,7 @@ defmodule Cytoville.Session do
           }
 
           case worker(state.port, request) do
-            {:ok, data} -> {:reply, {:ok, data}, touch(%{state | data: data})}
+            {:ok, data} -> {:reply, {:ok, client_data(data)}, touch(%{state | data: data})}
             {:error, reason} -> {:reply, {:error, reason}, state}
           end
         end
@@ -188,6 +188,11 @@ defmodule Cytoville.Session do
   end
 
   defp authorized?(state, key), do: key != nil and key in Map.values(state.tokens)
+
+  # Checkpoints retain complete runtime content. Network updates carry only
+  # mutable state and the content fingerprint supplied by the Rust worker.
+  defp client_data(data),
+    do: Map.update!(data, "runtime", &Map.delete(&1, "content"))
   defp recoverable?(record, {:resume, key}), do: key in Map.values(record["tokens"])
 
   defp recoverable?(record, {:join, key}),

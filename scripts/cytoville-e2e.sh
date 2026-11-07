@@ -12,7 +12,7 @@ cleanup() {
 }
 trap cleanup EXIT
 "$target/debug/cytoville-ums" init "$scratch/source.json"
-jq '.content.SPECIMENS.euglena.name = "UMS end-to-end cell"' "$scratch/source.json" > "$scratch/edited.json"
+jq '.content.SPECIMENS.euglena.name = "UMS end-to-end cell" | .content.SPECIMENS.euglena.blurb = ("x" * 5242880)' "$scratch/source.json" > "$scratch/edited.json"
 "$target/debug/cytoville-ums" compile "$scratch/edited.json" "$PWD" "$scratch/package.json"
 export CYTOVILLE_WORKER="$target/debug/cytoville-server" CYTOVILLE_PACKAGE="$scratch/package.json"
 export CYTOVILLE_PORT=0 CYTOVILLE_READY_FILE="$scratch/port"
@@ -35,6 +35,8 @@ if [[ ! -s "$scratch/port" ]]; then cat "$scratch/server.log"; exit 1; fi
 export CYTOVILLE_E2E_SERVER="127.0.0.1:$(cat "$scratch/port")"
 if [[ "${CYTOVILLE_E2E_TLS:-0}" == 1 ]]; then
   export CYTOVILLE_E2E_SERVER="tls://localhost:$(cat "$scratch/port")"
-  env -u CYTOVILLE_CA_CERT cargo test -p cytoville-bevy --test end_to_end --locked rejects_untrusted_tls -- --ignored --nocapture
 fi
 cargo test -p cytoville-bevy --test end_to_end --locked ums_to_elixir -- --ignored --nocapture
+if [[ "${CYTOVILLE_E2E_TLS:-0}" == 1 ]]; then
+  env -u CYTOVILLE_CA_CERT cargo test -p cytoville-bevy --test end_to_end --locked rejects_untrusted_tls -- --ignored --nocapture
+fi

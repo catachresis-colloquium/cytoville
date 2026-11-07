@@ -419,11 +419,15 @@ fn network_updates(mut s: ResMut<Session>) {
     };
     for update in updates {
         match update {
-            Ok(runtime) => {
-                s.dirty |= runtime.game != s.runtime.game;
-                // The authoritative trace and native memory can change even
-                // when the visible game state stays the same.
-                s.runtime = runtime;
+            Ok(state) => {
+                let changed = state.game != s.runtime.game;
+                match s.runtime.apply_state(state) {
+                    Ok(()) => s.dirty |= changed,
+                    Err(error) => {
+                        s.message = error;
+                        s.dirty = true;
+                    }
+                }
             }
             Err(error) => {
                 s.message = error;
@@ -540,7 +544,7 @@ mod tests {
         let expected = serde_json::to_value(&remote).unwrap();
         let (events, receive) = mpsc::channel();
         let (send, _commands) = mpsc::channel();
-        events.send(Ok(remote)).unwrap();
+        events.send(Ok(remote.into_state())).unwrap();
         let mut app = App::new();
         app.insert_resource(Session {
             runtime,

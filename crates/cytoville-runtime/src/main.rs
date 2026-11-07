@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 use cytoville_core::{Command, Content, actions};
-use cytoville_runtime::Runtime;
+use cytoville_runtime::{Runtime, content_id as fingerprint};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::io::{self, BufRead, Read, Write};
@@ -41,9 +41,13 @@ fn respond(
     r: Request,
     runtime: &mut Option<Runtime>,
     content: &mut Content,
+    content_id: &mut String,
 ) -> Result<Value, String> {
+    let new_content = matches!(&r, Request::New { .. } | Request::Load { .. });
     let next = match r {
-        Request::State => return checked_response(snapshot(runtime.as_ref().ok_or("No game")?)),
+        Request::State => {
+            return checked_response(snapshot(runtime.as_ref().ok_or("No game")?, content_id));
+        }
         Request::Save => {
             return checked_response(
                 serde_json::to_value(runtime.as_ref().ok_or("No game")?)
@@ -90,13 +94,19 @@ fn respond(
     };
     // Only mutations need a staged runtime. Polls and saves never clone either
     // the current runtime or the standalone content used to start new sessions.
-    let value = checked_response(snapshot(&next))?;
+    let next_id = if new_content {
+        fingerprint(&next.content)?
+    } else {
+        content_id.clone()
+    };
+    let value = checked_response(snapshot(&next, &next_id))?;
     *runtime = Some(next);
+    *content_id = next_id;
     Ok(value)
 }
 
-fn snapshot(rt: &Runtime) -> Value {
-    json!({"runtime":rt,"actions":actions::list(&rt.content,&rt.game,rt.game.active,&rt.game.actors[rt.game.active].location),"nativeDecisions":rt.ai_tick})
+fn snapshot(rt: &Runtime, content_id: &str) -> Value {
+    json!({"contentId":content_id,"runtime":rt,"actions":actions::list(&rt.content,&rt.game,rt.game.active,&rt.game.actors[rt.game.active].location),"nativeDecisions":rt.ai_tick})
 }
 
 fn checked_response(value: Value) -> Result<Value, String> {
@@ -128,51 +138,10 @@ fn checked_response(value: Value) -> Result<Value, String> {
         .map_err(|_| String::from("Session response exceeds transport limit"))?;
     Ok(value)
 }
-#[cfg(test)]
-mod tests {
-    use super::*;
 
-    fn new_game() -> Request {
-        Request::New {
-            specimen: "euglena".into(),
-            scenario: "fresh-daughter".into(),
-            difficulty: "standard".into(),
-            seed: 7,
-            multiplayer: true,
-        }
-    }
-
-    #[test]
-    fn large_valid_content_is_sent_once_and_oversized_transitions_are_atomic() {
-        let mut content = Content::builtin();
-        content.specimens.get_mut("euglena").unwrap().blurb = "x".repeat(5 * 1024 * 1024);
-        content.validate().unwrap();
-        let mut runtime = None;
-        let reply = respond(new_game(), &mut runtime, &mut content).unwrap();
-        assert!(reply.get("content").is_none());
-        assert!(reply.get("game").is_none());
-        assert!(serde_json::to_vec(&reply).unwrap().len() < 8 * 1024 * 1024 - 1024);
-        let polled = respond(Request::State, &mut runtime, &mut content).unwrap();
-        assert!(
-            polled == reply,
-            "A read-only poll must preserve the snapshot"
-        );
-        let saved = respond(Request::Save, &mut runtime, &mut content).unwrap();
-        assert!(
-            saved == reply["runtime"],
-            "A save must preserve the runtime"
-        );
-        let previous = serde_json::to_value(&runtime).unwrap();
-        content.specimens.get_mut("euglena").unwrap().blurb = "x".repeat(8 * 1024 * 1024);
-        assert_eq!(
-            respond(new_game(), &mut runtime, &mut content).unwrap_err(),
-            "Session response exceeds transport limit"
-        );
-        assert_eq!(serde_json::to_value(&runtime).unwrap(), previous);
-    }
-}
 fn main() {
     let mut runtime = None;
+    let mut content_id = String::new();
     let mut content = Content::builtin();
     if let Ok(path) = std::env::var("CYTOVILLE_PACKAGE") {
         let load = || -> Result<Content, String> {
@@ -209,7 +178,7 @@ fn main() {
         }
         let result = serde_json::from_slice::<Request>(&bytes)
             .map_err(|e| e.to_string())
-            .and_then(|r| respond(r, &mut runtime, &mut content));
+            .and_then(|r| respond(r, &mut runtime, &mut content, &mut content_id));
         let reply = match result {
             Ok(value) => Reply::Success {
                 data: value,
@@ -225,5 +194,50 @@ fn main() {
         {
             break;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn new_game() -> Request {
+        Request::New {
+            specimen: "euglena".into(),
+            scenario: "fresh-daughter".into(),
+            difficulty: "standard".into(),
+            seed: 7,
+            multiplayer: true,
+        }
+    }
+
+    #[test]
+    fn large_valid_content_is_sent_once_and_oversized_transitions_are_atomic() {
+        let mut content = Content::builtin();
+        content.specimens.get_mut("euglena").unwrap().blurb = "x".repeat(5 * 1024 * 1024);
+        content.validate().unwrap();
+        let mut runtime = None;
+        let mut content_id = String::new();
+        let reply = respond(new_game(), &mut runtime, &mut content, &mut content_id).unwrap();
+        assert!(reply.get("content").is_none());
+        assert!(reply.get("game").is_none());
+        assert!(serde_json::to_vec(&reply).unwrap().len() < 8 * 1024 * 1024 - 1024);
+        let polled = respond(Request::State, &mut runtime, &mut content, &mut content_id).unwrap();
+        assert!(
+            polled == reply,
+            "A read-only poll must preserve the snapshot"
+        );
+        let saved = respond(Request::Save, &mut runtime, &mut content, &mut content_id).unwrap();
+        assert!(
+            saved == reply["runtime"],
+            "A save must preserve the runtime"
+        );
+        let previous = serde_json::to_value(&runtime).unwrap();
+        content.specimens.get_mut("euglena").unwrap().blurb = "x".repeat(8 * 1024 * 1024);
+        assert_eq!(
+            respond(new_game(), &mut runtime, &mut content, &mut content_id).unwrap_err(),
+            "Session response exceeds transport limit"
+        );
+        assert_eq!(serde_json::to_value(&runtime).unwrap(), previous);
     }
 }

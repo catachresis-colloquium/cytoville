@@ -80,6 +80,17 @@ Put every question that needs the owner's decision through the selector (the Ask
 
 <!-- ARRIVAL-PACK:END · provenance: DEED@df49a7693270 ANCHOR@09e36d617a30 · Manifesto@DRAFT-unratified · regenerate: `just claude-md` (k9 drift-detects; do not hand-edit above) -->
 
+<!-- Repository metadata clarification (2026-11-07); licence declarations unchanged. -->
+## Cytoville project licence authority
+
+The explicit project licence in `cytoville_chora.deed`, the root `LICENSE`, and
+`README.adoc` is AGPL-3.0-or-later for the game implementation, including its
+server. This follows `metadatastician/standards/3-practice/LICENCE-POLICY.adoc`
+Rule 5 (games, owner ruling 2026-08-26). It is the project-specific exception to
+the generic generated AGPL denial above. New game/server files follow that
+declared licence; inherited MPL tooling retains its existing licence. This
+clarification does not authorize relicensing existing files.
+
 <!-- Hand-authored (owner, 2026-10-05): kept below the generated region so `just claude-md` does not overwrite it. -->
 ## Estate-Wide Format Migration Directives
 

@@ -39,6 +39,10 @@ valid package. Alternatively, unset it to resume with checkpointed content.
 Use `cytoville --host --native-rival --session NAME` for a hosted Evil Weevil
 opponent. Without `--native-rival`, the host waits for a human guest.
 Both modes carry the complete Enaction trace and native state to the client.
+Immutable content is delivered at create/join/resume with a canonical SHA-256
+fingerprint. Polls and command replies omit it; every update must match the
+handshake fingerprint. Clients apply all mutable runtime fields against their
+retained validated content.
 
 == Checkpoint recovery
 
@@ -49,6 +53,15 @@ before successful transitions are acknowledged. Keep this directory on a local
 filesystem and preserve it when restarting the service. Resume restores the
 session through the Rust validator, including content, trace and native memory.
 Sessions expire after inactivity; expired checkpoints cannot be resumed.
+The directory is initialized only at startup. Existing directories must already
+be private and dedicated to Cytoville records; their permissions are not changed.
+Removing the store while running causes requests to fail rather than recreating it.
+
+The runtime retains the complete causal trace within a 100,000-event budget and
+a 1,000,000-native-tick budget, also subject to the 8 MiB transport limit. Capacity
+errors reject transitions atomically and preserve the last acknowledged state for
+export. Scenario turn limits do not override these resource budgets; unbounded
+history archival and continuation are outside this release's protocol.
 
 This is a single-host store, not distributed consensus. Backups, encrypted public
 ingress, disk quotas and deployment-specific crash/power-loss certification are

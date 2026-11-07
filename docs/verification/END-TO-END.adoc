@@ -35,7 +35,12 @@ scenario can be run separately with `bash scripts/cytoville-e2e.sh`.
 
 == Limits
 
-Runtime responses carry content once, inside `runtime`. The worker checks the
+Create, join and resume handshakes carry immutable content once, inside `runtime`,
+with its canonical SHA-256 `contentId`. Subsequent network state polls and command
+acknowledgements carry game, native memory, tick and complete trace plus that
+fingerprint. Bevy retains the validated content and rejects mismatched fingerprints
+or changed content on resume. Checkpoints and private worker responses remain
+self-contained. The worker checks the
 serialized response against the 8 MiB transport limit, reserving 1 KiB for the
 host's credential envelope, before committing a state transition. A session
 whose response would exceed that bound rejects the transition without an
@@ -49,6 +54,20 @@ refreshes the in-memory lease and checkpoints the lease at most once per
 therefore be earlier than the latest poll by up to that interval. Startup removes
 expired or invalid checkpoints and interrupted temporary writes; loading an
 expired checkpoint also deletes it.
+
+Checkpoint storage is initialized once at application startup. New stores are
+private (0700); an existing store must already be private and contain only
+Cytoville checkpoint filenames. Startup refuses other operator directories without
+changing their permissions. Ordinary requests never recreate a removed store.
+
+Sessions have explicit resource ceilings: 100,000 trace events, 1,000,000 native
+ticks and the transport byte budget above. These budgets are independent of a
+scenario's turn limit. At capacity, a command fails with an explicit capacity
+error and leaves the last acknowledged state and full causal history unchanged
+and serializable for export. The boundary regression accepts event 100,000 and
+rejects the next transition atomically. History is never silently pruned.
+Continuation beyond these budgets requires a separately designed archival protocol;
+this release provides bounded sessions, not unlimited-duration matches.
 
 Tests exercise Bevy's real networking code headlessly, not graphical input.
 The checkpoint store is single-host and has not been certified for power loss,
