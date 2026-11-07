@@ -47,7 +47,11 @@ impl Runtime {
             seat as i32,
             cause,
         );
-        next.trace.tropes.last_mut().unwrap().bearer = format!("cell-{seat}");
+        next.trace
+            .tropes
+            .last_mut()
+            .ok_or("Missing command trace")?
+            .bearer = format!("cell-{seat}");
         if !next.game.multiplayer && next.game.active == 1 && next.game.status == "playing" {
             next.run_rival()?;
         }
