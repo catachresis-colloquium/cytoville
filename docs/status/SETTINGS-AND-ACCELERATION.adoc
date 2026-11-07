@@ -21,8 +21,8 @@ Provide top-level Settings tabs:
 * Server: a contextual Game Server Admin status/details panel and launch/link
   to the actual administration application when used alongside the game.
 
-The current research catalogue in draft PR 11 is an intermediate implementation
-and does not satisfy this clarified Settings design. Do not mark this scope
+The original research catalogue in PR 11 was an intermediate implementation
+and did not satisfy this clarified Settings design. Do not mark this scope
 complete based on disabled buttons, device-name enums or interface declarations.
 Keep hosting local; no hardware purchase, external messaging or cloud compute
 activation is authorised by these settings.
@@ -66,6 +66,67 @@ end-to-end measurements. Hardware-dependent validation must name the tested
 device/driver; simulated tests do not count as physical-device support.
 
 == Immediate correctness and acceptance
+
+=== Implemented Settings slice, 7 November 2026
+
+The Bevy client now has six top-level tabs. Presentation preferences live in a
+separate bounded JSON file (`--settings PATH`), not in authoritative game state.
+High contrast, reduced movement/pulsing, music, the presentation-queue hint,
+V-sync, borderless fullscreen, window borders and window dimensions control
+the actual presentation systems. Video preferences are applied only when their
+values change, so changing sound or contrast does not resize the window.
+
+Difficulty, the native Evil Weevil/baseline rival choice, decision budget and
+AI name apply to a fresh single-player game. Runtime saves/checkpoints carry
+the selected rival configuration; older saves default to the original native
+80-decision rival. Existing sessions are not silently reconfigured. Capability
+means the explicit 3/12/80-decision budget, not a claim about measured intelligence.
+
+The graphical acceptance script isolates preferences and saves in scratch
+storage, visits every tab, reloads preferences, then advances a new game with
+the chosen baseline rival. This supplements the existing real map-click,
+offline save/reload and loopback TLS host/resume journey. Native desktop
+performance and screen-reader acceptance remain separate requirements.
+
+=== Adiabatic harness scope
+
+The collapsed section at the bottom of Performance opens the research guide
+and runs bounded reference checks on a background worker. The QUBO is a
+one-of-four district travel-cost model from the current content/rules. Its
+16 candidates are enumerated and independently checked against minimum cost.
+Candidate verification checks variable bounds and recomputes integer energy;
+the reference solver has a work budget and cancellation. This is a classical
+baseline and provider-result validation seam, not a quantum annealer.
+
+A reversible half-adder retains its two input bits, computes sum/carry into
+two clean ancilla wires, then uncomputes. The harness checks all four input
+cases; separate tests check inverse execution and invalid gate aliasing.
+Logical reversibility on an ordinary CPU is not physical energy recovery.
+
+Run `cargo run -p cytoville-runtime --example adiabatic_harness --locked` for
+a JSON receipt including the model, selected candidate, checked energy and
+explicit `physical_hardware_tested: false`, `measured_joules: null`. No game
+state, network provider or cloud job is changed. There is no hardware driver,
+annealing schedule implementation or energy measurement yet. Creusot coverage
+remains the three existing resource primitives, not these research kernels.
+
+=== Still outstanding
+
+* Device execution backends and game consumers for GPU compute, NPU/TPU,
+  FPGA, dedicated DSP/audio/media, physics/maths, crypto/I/O/DPU and QPU;
+  shared CPU SIMD/multicore kernels and end-to-end benchmarking. Bevy rendering
+  and a frame-queue hint do not complete these accelerator requirements.
+* Variable AI seat counts: the current authoritative rules/save format still
+  has two actors. No nonfunctional count selector has been introduced.
+* Multiplayer host/join configuration inside Settings (the existing verified
+  local TLS launch/connection-file path continues to work).
+* Voiceover and stereo-to-mono routing; the current soundtrack is mono already.
+* A live GSA adapter, contextual status panel and link to the installed/admin
+  application, plus applied Mathesis contracts and their validation.
+* Input-to-display latency evidence and native graphical acceptance of each
+  new presentation control. Passing app-update timing is insufficient.
+
+=== Continuing acceptance obligations
 
 * Fix illustrated-map click targets, repeated-destination feedback and visible
   travel before expanding Settings. Validate picture clicks and unchanged ATP/

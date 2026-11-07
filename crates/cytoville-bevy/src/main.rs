@@ -12,6 +12,7 @@ use std::{path::PathBuf, time::Instant};
 mod city;
 mod performance;
 mod portrait;
+mod settings;
 mod soundtrack;
 mod technology;
 const BG: Color = Color::srgb(0.025, 0.055, 0.075);
@@ -52,9 +53,12 @@ struct Capture {
 }
 #[derive(Component, Clone)]
 enum Click {
+    SettingsTab(settings::Tab),
+    Preference(settings::Preference),
     Settings,
     Technology(usize),
     TechnologyContribute,
+    ResearchHarness,
     TechnologySource,
     TechnologyProject,
     UnavailableTechnology,
@@ -120,6 +124,16 @@ fn main() {
     if profile.is_some() {
         performance::enable();
     }
+    let mut user_settings = settings::Settings::load(PathBuf::from(
+        arg("--settings").unwrap_or_else(|| "cytoville-settings.json".into()),
+    ));
+    user_settings.open = args.contains(&"--technology-settings".into());
+    user_settings.research_open = user_settings.open;
+    user_settings.selected = 7;
+    if args.contains(&"--low-latency-probe".into()) {
+        user_settings.preferences.frame_queue = 1;
+    }
+    let preferred_difficulty = user_settings.preferences.difficulty;
     let seed = arg("--seed").and_then(|s| s.parse().ok()).unwrap_or(7);
     let mut content = Content::builtin();
     if let Some(path) = arg("--package") {
@@ -132,7 +146,7 @@ fn main() {
         content,
         "euglena",
         "fresh-daughter",
-        "standard",
+        ["gentle", "standard", "fierce"][preferred_difficulty],
         seed,
         false,
     )
@@ -185,6 +199,11 @@ fn main() {
     let smoke_until = arg("--smoke-seconds")
         .and_then(|s| s.parse::<u64>().ok())
         .map(|n| Instant::now() + std::time::Duration::from_secs(n));
+    if network.is_none() {
+        runtime
+            .configure_rival(user_settings.preferences.rival.clone())
+            .expect("valid saved AI configuration");
+    }
     let mut app = App::new();
     let plugins = DefaultPlugins.set(WindowPlugin {
         primary_window: Some(Window {
@@ -209,10 +228,7 @@ fn main() {
         .init_resource::<portrait::Cache>()
         .init_resource::<city::Artwork>()
         .init_resource::<city::Motion>()
-        .insert_resource(technology::Settings {
-            open: args.contains(&"--technology-settings".into()),
-            ..default()
-        })
+        .insert_resource(user_settings)
         .insert_resource(Session {
             runtime,
             network,
@@ -220,7 +236,7 @@ fn main() {
             dirty: true,
             specimen: 0,
             scenario: 0,
-            difficulty: 1,
+            difficulty: preferred_difficulty,
             seed,
             page: 0,
             message,
@@ -254,6 +270,8 @@ fn main() {
             (
                 keyboard,
                 network_updates,
+                settings::apply,
+                settings::poll_research,
                 render,
                 animate,
                 city::animate,
@@ -274,6 +292,7 @@ fn main() {
         }
     });
     app.add_systems(Startup, performance::adapter);
+    app.add_systems(Startup, settings::detect_adapter);
     app.add_systems(First, performance::frame);
     app.add_systems(Last, performance::exit_requested);
     app.run();
@@ -341,7 +360,7 @@ fn command(s: &mut Session, cmd: GameCommand) {
 fn interact(
     event: On<Activate>,
     mut s: ResMut<Session>,
-    mut settings: ResMut<technology::Settings>,
+    mut settings: ResMut<settings::Settings>,
     q: Query<(&Click, &Enabled)>,
 ) {
     let Ok((click, enabled)) = q.get(event.entity) else {
@@ -351,6 +370,13 @@ fn interact(
         return;
     }
     match click.clone() {
+        Click::SettingsTab(tab) => {
+            settings.tab = tab;
+            settings.focus = 0;
+            settings.research_open = false;
+            settings.contribute = false;
+        }
+        Click::Preference(pref) => settings.change(pref),
         Click::Settings => settings.open = !settings.open,
         Click::Technology(i) => {
             settings.selected = i.min(technology::TECHNOLOGIES.len() - 1);
@@ -358,6 +384,10 @@ fn interact(
             settings.notice.clear();
         }
         Click::TechnologyContribute => settings.contribute = !settings.contribute,
+        Click::ResearchHarness => {
+            let seat = s.network.as_ref().map(|n| n.seat).unwrap_or(0);
+            settings.start_research(&s.runtime, seat);
+        }
         Click::TechnologySource | Click::TechnologyProject => {
             if let Err(error) = technology::open_source(
                 settings.selected,
@@ -369,7 +399,10 @@ fn interact(
         Click::UnavailableTechnology => return,
         Click::Specimen(i) => s.specimen = i,
         Click::Scenario(i) => s.scenario = i,
-        Click::Difficulty(i) => s.difficulty = i,
+        Click::Difficulty(i) => {
+            s.difficulty = i;
+            settings.set_difficulty(i);
+        }
         Click::Start => {
             let c = s.runtime.content.clone();
             let sp = c.specimen_order[s.specimen].clone();
@@ -381,7 +414,11 @@ fn interact(
                 ["gentle", "standard", "fierce"][s.difficulty],
                 s.seed,
                 false,
-            ) {
+            )
+            .and_then(|mut rt| {
+                rt.configure_rival(settings.preferences.rival.clone())?;
+                Ok(rt)
+            }) {
                 Ok(rt) => {
                     s.runtime = rt;
                     s.menu = false;
@@ -476,32 +513,87 @@ fn interact(
 fn keyboard(
     keys: Res<ButtonInput<KeyCode>>,
     mut s: ResMut<Session>,
-    mut settings: ResMut<technology::Settings>,
+    mut settings: ResMut<settings::Settings>,
     mut typed: MessageReader<bevy::input::keyboard::KeyboardInput>,
 ) {
     if settings.open {
+        if let Some(mut name) = settings.edit_ai_name.take() {
+            let before = name.clone();
+            for event in typed.read() {
+                if event.state == bevy::input::ButtonState::Pressed {
+                    if event.key_code == KeyCode::Backspace {
+                        name.pop();
+                    } else if let Some(value) = &event.text {
+                        for ch in value.chars().filter(|c| !c.is_control()) {
+                            if name.chars().count() < 40 {
+                                name.push(ch);
+                            }
+                        }
+                    }
+                }
+            }
+            s.dirty |= before != name;
+            if keys.just_pressed(KeyCode::Enter) {
+                settings.set_ai_name(name);
+                s.dirty = true;
+            } else if keys.just_pressed(KeyCode::Escape) {
+                s.dirty = true;
+            } else {
+                settings.edit_ai_name = Some(name);
+            }
+            return;
+        }
         typed.clear();
         if keys.just_pressed(KeyCode::Escape) {
             settings.open = false;
             s.dirty = true;
         }
-        let count = technology::TECHNOLOGIES.len();
-        if keys.just_pressed(KeyCode::ArrowDown) || keys.just_pressed(KeyCode::ArrowUp) {
-            settings.selected = (settings.selected
-                + if keys.just_pressed(KeyCode::ArrowDown) {
+        if keys.just_pressed(KeyCode::ArrowLeft) || keys.just_pressed(KeyCode::ArrowRight) {
+            settings.tab = settings
+                .tab
+                .next(if keys.just_pressed(KeyCode::ArrowRight) {
                     1
                 } else {
-                    count - 1
-                })
-                % count;
+                    5
+                });
+            settings.focus = 0;
+            settings.research_open = false;
             settings.contribute = false;
             s.dirty = true;
         }
-        if keys.just_pressed(KeyCode::Enter) {
-            settings.contribute = !settings.contribute;
+        if keys.just_pressed(KeyCode::ArrowDown) || keys.just_pressed(KeyCode::ArrowUp) {
+            if settings.research_open {
+                settings.selected = if settings.selected == 7 { 8 } else { 7 };
+                settings.contribute = false;
+            } else {
+                let count = settings.options().len();
+                if count > 0 {
+                    settings.focus = (settings.focus
+                        + if keys.just_pressed(KeyCode::ArrowDown) {
+                            1
+                        } else {
+                            count - 1
+                        })
+                        % count;
+                }
+            }
             s.dirty = true;
         }
-        if settings.contribute
+        if keys.just_pressed(KeyCode::Enter) {
+            if settings.research_open {
+                settings.contribute = !settings.contribute;
+            } else if let Some(pref) = settings.options().get(settings.focus).copied() {
+                settings.change(pref);
+            }
+            s.dirty = true;
+        }
+        if settings.research_open && keys.just_pressed(KeyCode::KeyH) {
+            let seat = s.network.as_ref().map(|n| n.seat).unwrap_or(0);
+            settings.start_research(&s.runtime, seat);
+            s.dirty = true;
+        }
+        if settings.research_open
+            && settings.contribute
             && (keys.just_pressed(KeyCode::KeyL) || keys.just_pressed(KeyCode::KeyC))
             && let Err(error) =
                 technology::open_source(settings.selected, keys.just_pressed(KeyCode::KeyC))
@@ -572,7 +664,8 @@ fn network_updates(mut s: ResMut<Session>) {
     for update in updates {
         match update {
             Ok(state) => {
-                let changed = state.game != s.runtime.game;
+                let changed = state.game != s.runtime.game
+                    || state.rival_settings != s.runtime.rival_settings;
                 match s.runtime.apply_state(state) {
                     Ok(()) => {
                         s.dirty |= changed;
@@ -605,11 +698,31 @@ fn render(
     mut images: ResMut<Assets<Image>>,
     mut portraits: ResMut<portrait::Cache>,
     mut artwork: ResMut<city::Artwork>,
-    settings: Res<technology::Settings>,
+    settings: Res<settings::Settings>,
 ) {
     if !s.dirty {
         return;
     }
+    let ui_bg = if settings.preferences.high_contrast {
+        Color::BLACK
+    } else {
+        BG
+    };
+    let ui_panel = if settings.preferences.high_contrast {
+        Color::BLACK
+    } else {
+        PANEL
+    };
+    let ui_ink = if settings.preferences.high_contrast {
+        Color::WHITE
+    } else {
+        INK
+    };
+    let ui_mint = if settings.preferences.high_contrast {
+        Color::srgb(1., 1., 0.)
+    } else {
+        MINT
+    };
     let _timing = performance::Span::new("screen_rebuild_cpu_ms");
     s.dirty = false;
     for entity in &screens {
@@ -625,13 +738,10 @@ fn render(
                     padding: UiRect::all(Val::Px(24.)),
                     ..column()
                 },
-                BackgroundColor(BG),
+                BackgroundColor(ui_bg),
             ))
             .with_children(|root| {
-                technology::draw(root, &settings);
-                if !settings.notice.is_empty() {
-                    root.spawn(text(&settings.notice, 14., INK));
-                }
+                settings::draw(root, &settings, &s);
             });
         return;
     }
@@ -647,29 +757,29 @@ fn render(
         &mut images,
     );
     let city_image = (!s.menu).then(|| artwork.get(c, &mut images));
-    commands.spawn((Screen,Node{width:Val::Percent(100.0),height:Val::Percent(100.0),padding:UiRect::all(Val::Px(24.0)),..column()},BackgroundColor(BG))).with_children(|root|{
-        root.spawn(Node{align_items:AlignItems::Center,justify_content:JustifyContent::SpaceBetween,..default()}).with_children(|head|{head.spawn(text("CYTOVILLE",32.0,MINT));head.spawn(text("ONE CELL. ONE LIFETIME. A WHOLE CITY.",15.0,INK));head.spawn(button(Click::Settings,true)).with_child(text("Settings",15.0,MINT));if !s.menu{head.spawn(button(Click::Menu,true)).with_child(text("Menu",15.0,INK));head.spawn(button(Click::Save,s.network.is_none())).with_child(text("Save · F5",15.0,INK));}});
+    commands.spawn((Screen,Node{width:Val::Percent(100.0),height:Val::Percent(100.0),padding:UiRect::all(Val::Px(24.0)),..column()},BackgroundColor(ui_bg))).with_children(|root|{
+        root.spawn(Node{align_items:AlignItems::Center,justify_content:JustifyContent::SpaceBetween,..default()}).with_children(|head|{head.spawn(text("CYTOVILLE",32.0,ui_mint));head.spawn(text("ONE CELL. ONE LIFETIME. A WHOLE CITY.",15.0,ui_ink));head.spawn(button(Click::Settings,true)).with_child(text("Settings",15.0,ui_mint));if !s.menu{head.spawn(button(Click::Menu,true)).with_child(text("Menu",15.0,ui_ink));head.spawn(button(Click::Save,s.network.is_none())).with_child(text("Save · F5",15.0,ui_ink));}});
 
         if !s.message.is_empty(){root.spawn(text(s.message.clone(),15.0,Color::srgb(1.0,0.75,0.38)));}
-        if let Some(name)=&s.name_edit{root.spawn(text(format!("Name: {name}_   Enter to save · Escape to cancel"),20.0,MINT));}
+        if let Some(name)=&s.name_edit{root.spawn(text(format!("Name: {name}_   Enter to save · Escape to cancel"),20.0,ui_mint));}
         if s.menu{
-            root.spawn(text("A protist life simulation and time-management strategy",23.0,INK));root.spawn(text("Develop one cell through its ontogeny. Earn biomass, express organelles and finish your checklist before your rival.",17.0,INK));root.spawn(text("CHOOSE YOUR SPECIMEN",16.0,MINT));
-            root.spawn(Node{flex_wrap:FlexWrap::Wrap,column_gap:Val::Px(8.0),row_gap:Val::Px(8.0),..default()}).with_children(|row|{for(i,id)in c.specimen_order.iter().enumerate(){row.spawn(button(Click::Specimen(i),true)).with_child(text(format!("{}{}",if s.specimen==i{"● "}else{""},c.specimens[id].name),17.0,INK));}});
-            let sp=&c.specimens[&c.specimen_order[s.specimen]];root.spawn(text(format!("{} · {}",sp.latin,sp.title),20.0,MINT));root.spawn(text(sp.blurb.clone(),17.0,INK));root.spawn(text("CHOOSE YOUR CELL CYCLE",16.0,MINT));
-            for(i,id)in c.scenario_order.iter().enumerate(){root.spawn(button(Click::Scenario(i),true)).with_child(text(format!("{}{} · {} cycles",if s.scenario==i{"● "}else{""},c.scenarios[id].name,c.scenarios[id].turn_limit),18.0,INK));}
-            root.spawn(Node{column_gap:Val::Px(10.0),..default()}).with_children(|row|{for(i,name)in["Gentle","Standard","Fierce"].iter().enumerate(){row.spawn(button(Click::Difficulty(i),true)).with_child(text(format!("{}{}",if s.difficulty==i{"● "}else{""},name),16.0,INK));}});
-            root.spawn(Node{column_gap:Val::Px(12.0),margin:UiRect::top(Val::Px(12.0)),..default()}).with_children(|row|{row.spawn(button(Click::Start,true)).with_child(text("Begin life →",22.0,MINT));row.spawn(button(Click::Continue,true)).with_child(text("Continue · F9",20.0,INK));});
-            root.spawn(text("Travel spends ATP. Eat every cycle. Rest to control stress. End a cycle with Space. Progress autosaves after every accepted command.",16.0,INK));return;
+            root.spawn(text("A protist life simulation and time-management strategy",23.0,ui_ink));root.spawn(text("Develop one cell through its ontogeny. Earn biomass, express organelles and finish your checklist before your rival.",17.0,ui_ink));root.spawn(text("CHOOSE YOUR SPECIMEN",16.0,ui_mint));
+            root.spawn(Node{flex_wrap:FlexWrap::Wrap,column_gap:Val::Px(8.0),row_gap:Val::Px(8.0),..default()}).with_children(|row|{for(i,id)in c.specimen_order.iter().enumerate(){row.spawn(button(Click::Specimen(i),true)).with_child(text(format!("{}{}",if s.specimen==i{"● "}else{""},c.specimens[id].name),17.0,ui_ink));}});
+            let sp=&c.specimens[&c.specimen_order[s.specimen]];root.spawn(text(format!("{} · {}",sp.latin,sp.title),20.0,ui_mint));root.spawn(text(sp.blurb.clone(),17.0,ui_ink));root.spawn(text("CHOOSE YOUR CELL CYCLE",16.0,ui_mint));
+            for(i,id)in c.scenario_order.iter().enumerate(){root.spawn(button(Click::Scenario(i),true)).with_child(text(format!("{}{} · {} cycles",if s.scenario==i{"● "}else{""},c.scenarios[id].name,c.scenarios[id].turn_limit),18.0,ui_ink));}
+            root.spawn(Node{column_gap:Val::Px(10.0),..default()}).with_children(|row|{for(i,name)in["Gentle","Standard","Fierce"].iter().enumerate(){row.spawn(button(Click::Difficulty(i),true)).with_child(text(format!("{}{}",if s.difficulty==i{"● "}else{""},name),16.0,ui_ink));}});
+            root.spawn(Node{column_gap:Val::Px(12.0),margin:UiRect::top(Val::Px(12.0)),..default()}).with_children(|row|{row.spawn(button(Click::Start,true)).with_child(text("Begin life →",22.0,ui_mint));row.spawn(button(Click::Continue,true)).with_child(text("Continue · F9",20.0,ui_ink));});
+            root.spawn(text("Travel spends ATP. Eat every cycle. Rest to control stress. End a cycle with Space. Progress autosaves after every accepted command.",16.0,ui_ink));return;
         }
-        root.spawn(text(format!("CYCLE {} / {} · {} → {} | {} · {}",g.turn,c.scenarios[&g.scenario_id].turn_limit,c.weather[&g.weather].name,c.weather[&g.forecast].name,a.name,a.phase),18.0,INK));root.spawn(text(format!("ATP {} / {}     Biomass {} μg C     Nutrition {:.0}%     Stress {:.0}%     Size {:.1}%     Genes T{}",a.atp,a.atp_max,a.biomass,a.nutrition,a.stress,a.size,a.transcription),20.0,MINT));
-        if g.status!="playing"{root.spawn(text(format!("{} · {}",g.status.to_uppercase(),g.winner.map(|i|format!("{} completed the checklist",g.actors[i].name)).unwrap_or("The biofilm exhausted its nutrients".into())),25.0,MINT));}else if g.active!=seat{root.spawn(text("Waiting for the other cell's turn…",18.0,INK));}
+        root.spawn(text(format!("CYCLE {} / {} · {} → {} | {} · {}",g.turn,c.scenarios[&g.scenario_id].turn_limit,c.weather[&g.weather].name,c.weather[&g.forecast].name,a.name,a.phase),18.0,ui_ink));root.spawn(text(format!("ATP {} / {}     Biomass {} μg C     Nutrition {:.0}%     Stress {:.0}%     Size {:.1}%     Genes T{}",a.atp,a.atp_max,a.biomass,a.nutrition,a.stress,a.size,a.transcription),20.0,ui_mint));
+        if g.status!="playing"{root.spawn(text(format!("{} · {}",g.status.to_uppercase(),g.winner.map(|i|format!("{} completed the checklist",g.actors[i].name)).unwrap_or("The biofilm exhausted its nutrients".into())),25.0,ui_mint));}else if g.active!=seat{root.spawn(text("Waiting for the other cell's turn…",18.0,ui_ink));}
         root.spawn(Node{width:Val::Percent(100.0),flex_grow:1.0,min_height:Val::Px(360.0),column_gap:Val::Px(18.0),..default()}).with_children(|body|{
-            body.spawn((Node{width:Val::Percent(56.0),height:Val::Percent(100.0),position_type:PositionType::Relative,..default()},BackgroundColor(PANEL))).with_children(|map|{
+            body.spawn((Node{width:Val::Percent(56.0),height:Val::Percent(100.0),position_type:PositionType::Relative,..default()},BackgroundColor(ui_panel))).with_children(|map|{
                 map.spawn((Pickable::IGNORE,ImageNode::new(city_image.clone().expect("playing city")),Node{position_type:PositionType::Absolute,width:Val::Percent(100.0),height:Val::Percent(100.0),..default()}));
                 for i in 0..12 {
                     map.spawn((Pickable::IGNORE,city::Bubble(i as f32),UiTransform::default(),Node{position_type:PositionType::Absolute,left:Val::Percent(4.+((i*37)%90) as f32),top:Val::Percent(24.+((i*19)%60) as f32),width:Val::Px(4.+(i%4) as f32*2.),height:Val::Px(4.+(i%4) as f32*2.),border:UiRect::all(Val::Px(1.)),border_radius:BorderRadius::MAX,..default()},BorderColor::all(Color::srgba(0.4,0.8,0.7,0.25))));
                 }
-                map.spawn((Pickable::IGNORE,Node{position_type:PositionType::Absolute,left:Val::Px(12.0),top:Val::Px(10.0),..default()})).with_child((Pickable::IGNORE,text("THE BIOFILM METROPOLIS",18.0,MINT)));
+                map.spawn((Pickable::IGNORE,Node{position_type:PositionType::Absolute,left:Val::Px(12.0),top:Val::Px(10.0),..default()})).with_child((Pickable::IGNORE,text("THE BIOFILM METROPOLIS",18.0,ui_mint)));
                 for id in &c.location_order {
                     let l = &c.locations[id];
                     let p = city::position(id,c);
@@ -681,46 +791,51 @@ fn render(
                         .insert((city::Landmark,Node{position_type:PositionType::Absolute,left:Val::Percent(landmark.x-7.),top:Val::Percent(landmark.y-5.),width:Val::Percent(14.),height:Val::Percent(10.),border:UiRect::all(Val::Px(2.)),border_radius:BorderRadius::MAX,..default()},BackgroundColor(Color::NONE),BorderColor::all(Color::NONE)));
                     map.spawn(button(Click::Game(GameCommand::Travel{location:id.clone()}),true))
                         .insert((Node{position_type:PositionType::Absolute,left:Val::Percent(p.x),top:Val::Percent(p.y),padding:UiRect::all(Val::Px(8.0)),width:Val::Percent(23.0),border_radius:BorderRadius::all(Val::Px(8.0)),..default()},BackgroundColor(if a.location==*id{Color::srgba(0.10,0.29,0.27,0.94)}else{Color::srgba(0.04,0.12,0.16,0.88)})))
-                        .with_child(text(format!("{}{}\n{}",if a.location==*id{"◉ "}else{""},l.short,if a.location==*id{"You are here".into()}else if cost>a.atp{format!("Needs {cost} ATP · have {}",a.atp)}else{format!("{cost} ATP")}),14.0,if a.location==*id{MINT}else{INK}));
+                        .with_child(text(format!("{}{}\n{}",if a.location==*id{"◉ "}else{""},l.short,if a.location==*id{"You are here".into()}else if cost>a.atp{format!("Needs {cost} ATP · have {}",a.atp)}else{format!("{cost} ATP")}),14.0,if a.location==*id{ui_mint}else{ui_ink}));
                 }
-                for (actor,handle,label,color) in [(seat,portrait.clone(),"YOU",MINT),(1-seat,rival.clone(),"RIVAL",Color::srgb(1.,0.66,0.48))] {
+                for (actor,handle,label,color) in [(seat,portrait.clone(),"YOU",ui_mint),(1-seat,rival.clone(),"RIVAL",Color::srgb(1.,0.66,0.48))] {
                     map.spawn((Pickable::IGNORE,city::CellMarker(actor),UiTransform::default(),Node{position_type:PositionType::Absolute,width:Val::Percent(100.),height:Val::Percent(100.),..default()})).with_children(|marker|{
                         marker.spawn((Pickable::IGNORE,CellPulse,UiTransform::default(),ImageNode::new(handle),Node{position_type:PositionType::Absolute,left:Val::Px(-24.),top:Val::Px(-24.),width:Val::Px(48.),height:Val::Px(48.),..default()}));
-                        marker.spawn((Pickable::IGNORE,Node{position_type:PositionType::Absolute,left:Val::Px(-21.),top:Val::Px(20.),padding:UiRect::axes(Val::Px(4.),Val::Px(2.)),border_radius:BorderRadius::all(Val::Px(4.)),..default()},BackgroundColor(BG))).with_child((Pickable::IGNORE,text(label,10.,color)));
+                        marker.spawn((Pickable::IGNORE,Node{position_type:PositionType::Absolute,left:Val::Px(-21.),top:Val::Px(20.),padding:UiRect::axes(Val::Px(4.),Val::Px(2.)),border_radius:BorderRadius::all(Val::Px(4.)),..default()},BackgroundColor(ui_bg))).with_child((Pickable::IGNORE,text(label,10.,color)));
                     });
                 }
                 map.spawn((CellPulse,UiTransform::default(),ImageNode::new(portrait.clone()),Node{position_type:PositionType::Absolute,left:Val::Px(8.0),bottom:Val::Px(4.0),width:Val::Px(130.0),height:Val::Px(130.0),..default()}));
-                map.spawn(Node{position_type:PositionType::Absolute,left:Val::Px(145.0),right:Val::Px(12.0),bottom:Val::Px(18.0),..column()}).with_children(|info|{info.spawn(text(format!("{} · {}",c.specimens[&a.specimen].name,g.looks[seat].pattern),15.0,INK));info.spawn(text(format!("{} organelles · {} stored meals · {}",a.organelles.len(),a.storage_stock,a.phase),14.0,INK));info.spawn(text(if s.map_message.is_empty(){"Click a district picture or name; choose an action on the right."}else{&s.map_message},13.0,MINT));});
+                map.spawn(Node{position_type:PositionType::Absolute,left:Val::Px(145.0),right:Val::Px(12.0),bottom:Val::Px(18.0),..column()}).with_children(|info|{info.spawn(text(format!("{} · {}",c.specimens[&a.specimen].name,g.looks[seat].pattern),15.0,ui_ink));info.spawn(text(format!("{} organelles · {} stored meals · {}",a.organelles.len(),a.storage_stock,a.phase),14.0,ui_ink));info.spawn(text(if s.map_message.is_empty(){"Click a district picture or name; choose an action on the right."}else{&s.map_message},13.0,ui_mint));});
             });
-            body.spawn((Node{width:Val::Percent(44.0),padding:UiRect::all(Val::Px(14.0)),..column()},BackgroundColor(PANEL))).with_children(|panel|{
-                if s.inspect{panel.spawn(text("EXPRESSED ORGANELLES",22.0,MINT));let page=s.page.min(a.organelles.len().div_ceil(4).saturating_sub(1));for id in a.organelles.iter().skip(page*4).take(4){let o=&c.organelles[id];panel.spawn(text(o.name.clone(),18.0,MINT));panel.spawn(text(format!("{} {}",o.effect,o.science),14.0,INK));}panel.spawn(button(Click::Page((page+1)%a.organelles.len().div_ceil(4).max(1)),true)).with_child(text("Next organelles",15.0,INK));panel.spawn(button(Click::Inspect,true)).with_child(text("Back to district",15.0,INK));
+            body.spawn((Node{width:Val::Percent(44.0),padding:UiRect::all(Val::Px(14.0)),..column()},BackgroundColor(ui_panel))).with_children(|panel|{
+                if s.inspect{panel.spawn(text("EXPRESSED ORGANELLES",22.0,ui_mint));let page=s.page.min(a.organelles.len().div_ceil(4).saturating_sub(1));for id in a.organelles.iter().skip(page*4).take(4){let o=&c.organelles[id];panel.spawn(text(o.name.clone(),18.0,ui_mint));panel.spawn(text(format!("{} {}",o.effect,o.science),14.0,ui_ink));}panel.spawn(button(Click::Page((page+1)%a.organelles.len().div_ceil(4).max(1)),true)).with_child(text("Next organelles",15.0,ui_ink));panel.spawn(button(Click::Inspect,true)).with_child(text("Back to district",15.0,ui_ink));
                 }else if let Some(event)=g.pending_event.as_ref().and_then(|id|c.events.iter().find(|e|e.id==*id)){
-                    panel.spawn(text(event.title.clone(),22.0,MINT));panel.spawn(text(event.extra.get("prompt").and_then(|v|v.as_str()).unwrap_or("Encounter"),16.0,INK));for choice in &event.choices{let lock=turn::choice_lock(a,choice);panel.spawn(button(Click::Game(GameCommand::Choose{id:choice.id.clone()}),lock.is_none())).with_child(text(format!("{}{}",choice.label,lock.map(|l|format!(" · {l}")).unwrap_or_default()),15.0,INK));}
+                    panel.spawn(text(event.title.clone(),22.0,ui_mint));panel.spawn(text(event.extra.get("prompt").and_then(|v|v.as_str()).unwrap_or("Encounter"),16.0,ui_ink));for choice in &event.choices{let lock=turn::choice_lock(a,choice);panel.spawn(button(Click::Game(GameCommand::Choose{id:choice.id.clone()}),lock.is_none())).with_child(text(format!("{}{}",choice.label,lock.map(|l|format!(" · {l}")).unwrap_or_default()),15.0,ui_ink));}
                 }else{
-                    panel.spawn(text(c.locations[&a.location].name.clone(),22.0,MINT));panel.spawn(text(c.locations[&a.location].blurb.clone(),15.0,INK));let available=actions::list(c,g,seat,&a.location);let pages=available.len().div_ceil(5).max(1);let page=s.page.min(pages-1);
-                    for action in available.iter().skip(page*5).take(5){panel.spawn(button(Click::Game(GameCommand::Act{id:action.id.clone()}),action.enabled()&&g.active==seat)).with_child(text(format!("{}\n{} ATP · {} μg C{}",action.label,action.atp,action.biomass,action.reason.as_ref().map(|r|format!(" · {r}")).unwrap_or_default()),15.0,if action.enabled(){INK}else{Color::srgb(0.5,0.6,0.6)}));}
-                    if pages>1{panel.spawn(Node{column_gap:Val::Px(8.0),..default()}).with_children(|row|{row.spawn(button(Click::Page(page.saturating_sub(1)),true)).with_child(text("←",18.0,INK));row.spawn(text(format!("{} / {pages}",page+1),16.0,INK));row.spawn(button(Click::Page((page+1).min(pages-1)),true)).with_child(text("→",18.0,INK));});}
-                    if a.location=="home"{panel.spawn(Node{flex_wrap:FlexWrap::Wrap,column_gap:Val::Px(6.0),row_gap:Val::Px(6.0),..default()}).with_children(|row|{for(click,label)in[(Click::Pattern,"Pattern"),(Click::Pigment,"Pigment"),(Click::Rename,"Rename"),(Click::Inspect,"Organelles")]{row.spawn(button(click,g.active==seat)).with_child(text(label,14.0,INK));}});}
+                    panel.spawn(text(c.locations[&a.location].name.clone(),22.0,ui_mint));panel.spawn(text(c.locations[&a.location].blurb.clone(),15.0,ui_ink));let available=actions::list(c,g,seat,&a.location);let pages=available.len().div_ceil(5).max(1);let page=s.page.min(pages-1);
+                    for action in available.iter().skip(page*5).take(5){panel.spawn(button(Click::Game(GameCommand::Act{id:action.id.clone()}),action.enabled()&&g.active==seat)).with_child(text(format!("{}\n{} ATP · {} μg C{}",action.label,action.atp,action.biomass,action.reason.as_ref().map(|r|format!(" · {r}")).unwrap_or_default()),15.0,if action.enabled(){ui_ink}else{Color::srgb(0.5,0.6,0.6)}));}
+                    if pages>1{panel.spawn(Node{column_gap:Val::Px(8.0),..default()}).with_children(|row|{row.spawn(button(Click::Page(page.saturating_sub(1)),true)).with_child(text("←",18.0,ui_ink));row.spawn(text(format!("{} / {pages}",page+1),16.0,ui_ink));row.spawn(button(Click::Page((page+1).min(pages-1)),true)).with_child(text("→",18.0,ui_ink));});}
+                    if a.location=="home"{panel.spawn(Node{flex_wrap:FlexWrap::Wrap,column_gap:Val::Px(6.0),row_gap:Val::Px(6.0),..default()}).with_children(|row|{for(click,label)in[(Click::Pattern,"Pattern"),(Click::Pigment,"Pigment"),(Click::Rename,"Rename"),(Click::Inspect,"Organelles")]{row.spawn(button(click,g.active==seat)).with_child(text(label,14.0,ui_ink));}});}
                 }
-                panel.spawn(button(Click::Game(GameCommand::EndTurn),g.pending_event.is_none()&&g.active==seat)).with_child(text("End cycle · Space →",20.0,MINT));
+                panel.spawn(button(Click::Game(GameCommand::EndTurn),g.pending_event.is_none()&&g.active==seat)).with_child(text("End cycle · Space →",20.0,ui_mint));
             });
         });
         root.spawn(Node{column_gap:Val::Px(24.0),..default()}).with_children(|bottom|{
-            bottom.spawn(Node{width:Val::Percent(56.0),..column()}).with_children(|goals|{goals.spawn(text("ONTOGENETIC QUEST CHECKLIST",15.0,MINT));for q in &c.scenarios[&g.scenario_id].quests{goals.spawn(text(format!("{} {} [{:.0} / {:.0}]",if a.done.contains(&q.id){"✓"}else{"○"},q.label,rules::quest_value(c,a,q),q.target),14.0,INK));}});
-            bottom.spawn(Node{width:Val::Percent(44.0),..column()}).with_children(|log|{log.spawn(text(format!("RIVAL: {} · {} goals · {}",g.actors[1-seat].name,g.actors[1-seat].done.len(),g.actors[1-seat].location),15.0,MINT));for line in g.log.iter().rev().take(4){log.spawn(text(line,13.0,INK));}});
+            bottom.spawn(Node{width:Val::Percent(56.0),..column()}).with_children(|goals|{goals.spawn(text("ONTOGENETIC QUEST CHECKLIST",15.0,ui_mint));for q in &c.scenarios[&g.scenario_id].quests{goals.spawn(text(format!("{} {} [{:.0} / {:.0}]",if a.done.contains(&q.id){"✓"}else{"○"},q.label,rules::quest_value(c,a,q),q.target),14.0,ui_ink));}});
+            bottom.spawn(Node{width:Val::Percent(44.0),..column()}).with_children(|log|{log.spawn(text(format!("RIVAL: {} · {} goals · {}",g.actors[1-seat].name,g.actors[1-seat].done.len(),g.actors[1-seat].location),15.0,ui_mint));for line in g.log.iter().rev().take(4){log.spawn(text(line,13.0,ui_ink));}});
         });
     });
 }
 fn animate(
     time: Res<Time>,
     mut s: ResMut<Session>,
+    settings: Res<settings::Settings>,
     mut cells: Query<&mut UiTransform, With<CellPulse>>,
     mut exit: MessageWriter<AppExit>,
 ) {
     let steps = s.clock.advance(time.delta_secs_f64());
     s.visual_phase += steps as f64 / 30.0;
     if steps > 0 {
-        let scale = 1.0 + (3.0 / 130.0) * (s.visual_phase * 2.0).sin() as f32;
+        let scale = if settings.preferences.reduced_motion {
+            1.
+        } else {
+            1.0 + (3.0 / 130.0) * (s.visual_phase * 2.0).sin() as f32
+        };
         for mut cell in &mut cells {
             // A visual pulse must not invalidate the UI layout every frame.
             cell.scale = Vec2::splat(scale);
@@ -809,8 +924,10 @@ mod tests {
             name_edit: None,
             inspect: false,
         })
-        .insert_resource(technology::Settings {
+        .insert_resource(settings::Settings {
             open: true,
+            research_open: true,
+            selected: 7,
             ..default()
         })
         .init_resource::<ButtonInput<KeyCode>>()
@@ -840,7 +957,7 @@ mod tests {
             .press(KeyCode::ArrowUp);
         app.update();
         assert_eq!(
-            app.world().resource::<technology::Settings>().selected,
+            app.world().resource::<settings::Settings>().selected,
             technology::TECHNOLOGIES.len() - 1
         );
         app.world_mut()
@@ -850,7 +967,7 @@ mod tests {
             .resource_mut::<ButtonInput<KeyCode>>()
             .press(KeyCode::Escape);
         app.update();
-        assert!(!app.world().resource::<technology::Settings>().open);
+        assert!(!app.world().resource::<settings::Settings>().open);
         assert!(!app.world().resource::<Session>().menu);
     }
 
@@ -885,7 +1002,7 @@ mod tests {
             inspect: false,
         });
         app.init_resource::<ButtonInput<KeyCode>>()
-            .init_resource::<technology::Settings>()
+            .init_resource::<settings::Settings>()
             .add_message::<bevy::input::keyboard::KeyboardInput>()
             .add_systems(Update, keyboard);
         for _ in 0..120 {

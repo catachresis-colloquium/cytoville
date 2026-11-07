@@ -108,9 +108,19 @@ fn start(mut commands: Commands, mut assets: ResMut<Assets<Score>>, sound: Res<S
         control: sound.clone(),
     })));
 }
-fn adapt(s: Res<crate::Session>, sound: Res<Sound>, keys: Res<ButtonInput<KeyCode>>) {
-    if keys.just_pressed(KeyCode::KeyM) {
-        sound.enabled.fetch_xor(true, Ordering::Relaxed);
+fn adapt(
+    mut s: ResMut<crate::Session>,
+    sound: Res<Sound>,
+    keys: Res<ButtonInput<KeyCode>>,
+    mut settings: ResMut<crate::settings::Settings>,
+) {
+    if keys.just_pressed(KeyCode::KeyM) && s.name_edit.is_none() && settings.edit_ai_name.is_none()
+    {
+        settings.change(crate::settings::Preference::Music);
+        sound
+            .enabled
+            .store(settings.preferences.music, Ordering::Relaxed);
+        s.dirty = true;
     }
     let g = &s.runtime.game;
     let seat = s.network.as_ref().map(|n| n.seat).unwrap_or(0);

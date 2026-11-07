@@ -54,9 +54,17 @@ No item on this list is represented as completed verification.
   journey that does not teleport after one delayed frame. Added rerouting/hitch
   tests and a graphical picture-click/repeat-click check; the full local journey
   passes. This addresses the identified map defects, not all reported latency.
-* The owner's clarified tabbed Settings and actual accelerator implementation
-  scope is recorded in SETTINGS-AND-ACCELERATION.adoc. The large research catalogue
-  is intermediate and must not be mistaken for completion of that scope.
+* Replaced the large catalogue with six Settings tabs and persisted presentation
+  controls, including contrast, reduced motion, sound, video and frame-queue hints.
+  Difficulty, Evil Weevil/baseline selection, AI budget and name configure new
+  single-player games and survive save/resume. The graphical journey exercises
+  all tabs and a configured baseline rival after preference reload.
+* Added a bounded local QUBO reference/verification harness and reversible
+  half-adder/uncomputation checks, available under the collapsed adiabatic section
+  and as a JSON-producing example. No physical quantum or energy-saving result
+  is claimed. Exact scope and remaining hardware/GSA/accessibility/player work
+  are recorded in SETTINGS-AND-ACCELERATION.adoc; this does not complete the
+  owner's broader accelerator request.
 
 == Functional acceptance on 2026-11-07
 

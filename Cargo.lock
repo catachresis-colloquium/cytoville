@@ -2479,6 +2479,7 @@ dependencies = [
  "cytoville-runtime",
  "enaction-time",
  "native-tls",
+ "serde",
  "serde_json",
 ]
 
