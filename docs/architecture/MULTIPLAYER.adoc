@@ -34,6 +34,8 @@ inspected repository did not contain.
 
 Start the server with `CYTOVILLE_PACKAGE=/absolute/path/package.json` to load a
 UMS-compiled package for all new sessions. Invalid packages fail closed.
+To resume checkpoints with `CYTOVILLE_PACKAGE` set, the path must refer to a
+valid package. Alternatively, unset it to resume with checkpointed content.
 Use `cytoville --host --native-rival --session NAME` for a hosted Evil Weevil
 opponent. Without `--native-rival`, the host waits for a human guest.
 Both modes carry the complete Enaction trace and native state to the client.
