@@ -363,6 +363,7 @@ fn keyboard(
     mut typed: MessageReader<bevy::input::keyboard::KeyboardInput>,
 ) {
     if let Some(mut name) = s.name_edit.take() {
+        let previous_name = name.clone();
         for event in typed.read() {
             if event.state == bevy::input::ButtonState::Pressed {
                 if event.key_code == KeyCode::Backspace {
@@ -386,10 +387,12 @@ fn keyboard(
                 pattern: a.pattern.clone(),
             };
             command(&mut s, cmd);
-        } else if !keys.just_pressed(KeyCode::Escape) {
+        } else if keys.just_pressed(KeyCode::Escape) {
+            s.dirty = true;
+        } else {
+            s.dirty |= name != previous_name;
             s.name_edit = Some(name);
         }
-        s.dirty = true;
         return;
     }
     typed.clear();
@@ -473,7 +476,7 @@ fn render(
             body.spawn((Node{width:Val::Percent(56.0),height:Val::Percent(100.0),position_type:PositionType::Relative,..default()},BackgroundColor(PANEL))).with_children(|map|{
                 map.spawn(Node{position_type:PositionType::Absolute,left:Val::Px(12.0),top:Val::Px(10.0),..default()}).with_child(text("THE BIOFILM METROPOLIS",18.0,MINT));
                 for id in &c.location_order{let l=&c.locations[id];let(x,y)=match id.as_str(){"home"=>(38.,40.),"university"=>(3.,28.),"solar"=>(26.,12.),"checkpoint"=>(49.,28.),"security"=>(73.,12.),"detritus"=>(3.,53.),"boutique"=>(73.,53.),"rift"=>(38.,62.),"gym"=>(6.,75.),"diner"=>(70.,75.),_=>(l.x as f32,l.y as f32)};let cost=rules::travel_cost(c,a,id).unwrap_or(0);map.spawn(button(Click::Game(GameCommand::Travel{location:id.clone()}),cost<=a.atp&&g.active==seat)).insert(Node{position_type:PositionType::Absolute,left:Val::Percent(x),top:Val::Percent(y),padding:UiRect::all(Val::Px(8.0)),width:Val::Percent(23.0),border_radius:BorderRadius::all(Val::Px(8.0)),..default()}).with_child(text(format!("{}{}\n{cost} ATP",if a.location==*id{"◉ "}else{""},l.short),14.0,if a.location==*id{MINT}else{INK}));}
-                map.spawn((CellPulse,ImageNode::new(portrait.clone()),Node{position_type:PositionType::Absolute,left:Val::Px(8.0),bottom:Val::Px(4.0),width:Val::Px(130.0),height:Val::Px(130.0),..default()}));
+                map.spawn((CellPulse,UiTransform::default(),ImageNode::new(portrait.clone()),Node{position_type:PositionType::Absolute,left:Val::Px(8.0),bottom:Val::Px(4.0),width:Val::Px(130.0),height:Val::Px(130.0),..default()}));
                 map.spawn(Node{position_type:PositionType::Absolute,left:Val::Px(145.0),bottom:Val::Px(18.0),..column()}).with_children(|info|{info.spawn(text(format!("{} · {}",c.specimens[&a.specimen].name,g.looks[seat].pattern),15.0,INK));info.spawn(text(format!("{} organelles · {} stored meals · {}",a.organelles.len(),a.storage_stock,a.phase),14.0,INK));});
             });
             body.spawn((Node{width:Val::Percent(44.0),padding:UiRect::all(Val::Px(14.0)),..column()},BackgroundColor(PANEL))).with_children(|panel|{
@@ -498,13 +501,17 @@ fn render(
 fn animate(
     time: Res<Time>,
     mut s: ResMut<Session>,
-    mut cells: Query<&mut Node, With<CellPulse>>,
+    mut cells: Query<&mut UiTransform, With<CellPulse>>,
     mut exit: MessageWriter<AppExit>,
 ) {
     let steps = s.clock.advance(time.delta_secs_f64());
     s.visual_phase += steps as f64 / 30.0;
-    for mut cell in &mut cells {
-        cell.width = Val::Px(130.0 + 3.0 * (s.visual_phase * 2.0).sin() as f32);
+    if steps > 0 {
+        let scale = 1.0 + (3.0 / 130.0) * (s.visual_phase * 2.0).sin() as f32;
+        for mut cell in &mut cells {
+            // A visual pulse must not invalidate the UI layout every frame.
+            cell.scale = Vec2::splat(scale);
+        }
     }
     if s.smoke_until.is_some_and(|d| Instant::now() >= d) {
         exit.write(AppExit::Success);
@@ -525,6 +532,54 @@ fn capture(mut commands: Commands, mut c: ResMut<Capture>) {
 mod tests {
     use super::*;
     use std::sync::{Mutex, mpsc};
+
+    #[test]
+    fn idle_rename_does_not_rebuild_the_screen_and_escape_closes_it() {
+        let mut app = App::new();
+        app.insert_resource(Session {
+            runtime: Runtime::new(
+                Content::builtin(),
+                "euglena",
+                "fresh-daughter",
+                "standard",
+                7,
+                false,
+            )
+            .unwrap(),
+            network: None,
+            menu: false,
+            dirty: false,
+            specimen: 0,
+            scenario: 0,
+            difficulty: 1,
+            seed: 7,
+            page: 0,
+            message: String::new(),
+            save: PathBuf::new(),
+            clock: FixedStep::from_hz(30.0),
+            visual_phase: 0.0,
+            smoke_until: None,
+            name_edit: Some("Cell".into()),
+            inspect: false,
+        });
+        app.init_resource::<ButtonInput<KeyCode>>()
+            .add_message::<bevy::input::keyboard::KeyboardInput>()
+            .add_systems(Update, keyboard);
+        for _ in 0..120 {
+            app.update();
+            assert!(
+                !app.world().resource::<Session>().dirty,
+                "idle rename requested a full screen rebuild"
+            );
+        }
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::Escape);
+        app.update();
+        let session = app.world().resource::<Session>();
+        assert!(session.name_edit.is_none());
+        assert!(session.dirty, "closing the name editor must redraw it");
+    }
 
     #[test]
     fn network_updates_keep_native_state_when_game_is_unchanged() {

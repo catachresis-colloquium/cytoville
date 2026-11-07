@@ -10,9 +10,12 @@
 |Rust/Zig concrete layout agreement and native kernel calls
 |tested-only
 |Compile-time size/offset assertions, Zig boundary tests and a linked C caller; native x86-64 Linux. C ABI compiler/target layout remains trusted.
-|Production Rust resource functions
+|Production Rust resource functions at the recorded Creusot 0.13 revision
 |proven
 |Creusot 0.13.0 discharged all three function verification files in `crates/cytoville-budget/src/lib.rs`: checked spending, bounded transfer conservation, and the other-seat calculation. The game calls this crate directly. A deliberately false postcondition was rejected. See `RECEIPT.adoc` for execution evidence and trust boundary.
+|Current Creusot 0.14 production workflow
+|open
+|The organisation allowlist is resolved. Run 42356826634 stopped in the shared harness: a successful single-file positive-control report was not recognised. No caller proof was performed. `hyperpolymath/cicd-suite#92` proposes the source correction; stand-in regression success is not a formal-proof receipt. The historical 0.13 receipt is not relabelled as a 0.14 result.
 |Rules, replay, packages and multiplayer
 |tested-only
 |Differential fixtures: 63 specimen/scenario/difficulty starts and 378 commands. Action boundaries, prerequisites, save replay, real native traces and two TCP clients exercise bounded cases.

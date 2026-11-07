@@ -1,0 +1,46 @@
+= Graphical acceptance, 2026-11-07
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+== Executed boundary
+
+`scripts/cytoville-graphical-acceptance.sh` passed locally against the actual
+Bevy window in an isolated 1440x960 Xvfb display, using X11 mouse and keyboard
+events. The Linux debug build used llvmpipe Vulkan software rendering. This is
+functional evidence, not a frame-rate target or a polished-game assessment.
+
+[cols="2,4",options="header"]
+|===
+|Journey |Observed evidence
+|New game |Amoeba, Gentle, cycle one, 102 ATP; pattern changed to spots.
+|Keyboard customisation |Name changed to AmoebaAcceptance and persisted.
+|Travel and study |University travel deducted 12 ATP. A locked tier changed no
+game state. Basal Metabolism deducted 12 ATP and 20 biomass, with progress 1/2.
+|Pagination |Captured course page 2/3 and inspected its distinct content.
+|Cycle and encounter |Space advanced to cycle two, native rival tick and Enaction
+events advanced; UV repair deducted 14 ATP and lowered stress to 5.
+|Persistence |F5, process restart and F9 retained the complete serialized runtime;
+a subsequent travel command proved the restored game remained playable.
+|Local encrypted host |The graphical Bevy client sent a turn through the real
+Elixir TLS listener, with the native rival and trace present in its checkpoint.
+|Reconnect |A fresh Bevy process resumed from the private ticket with the same
+authoritative game; captured screen showed Connected as cell 1, cycle two.
+|===
+
+The organelle panel was separately opened and inspected after restoring the
+earlier Amoeba run. Eight repeatable journey screenshots and a text receipt
+are retained by the script. Temporary certificates, private keys, connection
+tickets and server checkpoints are removed and never uploaded as artifacts.
+All listeners remain local; the test provisions no public hosting.
+
+== Performance changes and limits
+
+Idle rename no longer marks the whole UI dirty every frame. A regression test
+checks 120 idle updates and Escape closure. Cell pulsing now changes a UI
+transform on fixed steps rather than changing layout width every render frame.
+The Bevy tests and updated native build passed before the graphical run.
+
+Remaining: release-build frame-time measurements on the target GPU, broad window
+size/DPI and accessibility testing, complete scenario/end-game coverage, two
+simultaneous graphical human clients, and art/sound/game-feel acceptance.
+The separate existing transport suite covers two human clients and rejects
+untrusted certificates and mismatched hostnames; those tests are not graphical.

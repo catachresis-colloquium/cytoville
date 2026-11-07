@@ -20,24 +20,19 @@ The standard CI script runs both plaintext-loopback and TLS variants.
 
 == Current acceptance limits
 
-This addition requires a successful TLS CI run before acceptance. The local WSL
-service stopped responding during compilation (Wsl/Service/WSAETIMEDOUT), so no
-local TLS pass is claimed. No public host or domain is provisioned, by owner request.
+On 2026-11-07 the native CI gate passed on main `c1b01b5` (run 42357421036),
+including real TCP/TLS multiplayer and certificate/hostname rejection checks.
+After an owner-authorised Debian restart, the real Bevy window also passed local
+X11 input acceptance, a command through the encrypted Elixir host, and resume
+from the private connection ticket. See `../verification/GRAPHICAL-ACCEPTANCE.adoc`.
+This is bounded functional acceptance, not performance or visual-quality certification.
+No public host or domain is provisioned, by owner request.
 
-Graphical startup was observed, but Windows capture returned partial WSL regions
-and input failed with "foreground window did not report a process id". Graphical
-interaction acceptance remains open; a rendering smoke test is not equivalent.
+== Production proof harness blocker
 
-== Production proof policy blocker
-
-The SHA-pinned production proof workflow is excluded by the organisation Actions
-allowlist. Repository-level updates return HTTP 409 because the policy is inherited;
-organisation policy access returns HTTP 403 requiring admin:org or Actions-policy
-permission. No policy was weakened and the proof gate remains enabled.
-
-An authorised organisation administrator must permit the reviewed exact workflow
-`hyperpolymath/cicd-suite/.github/workflows/creusot-gate.yml@faba7124aee223098d33497bdadc96e111829752`
-and its exact third-party toolchain action
-`dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f`, while preserving
-existing entries and SHA pinning. Then rerun Production resource proofs on the
-current PR head. PR #3 must remain unmerged until the checks pass.
+The owner saved the required Actions allowlist entries; workflow startup and
+tool installation now run. Creusot 0.14 run 42356826634 rejects the successful
+singleton positive-control report before attempting Cytoville's contracts.
+The source correction is proposed in `hyperpolymath/cicd-suite#92`; its parser
+regressions pass, but adoption and real-tool proof receipts remain outstanding.
+PR #3 was merged on 2026-11-07; that merge does not establish a proof pass.

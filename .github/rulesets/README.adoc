@@ -30,10 +30,16 @@ from a checked-in payload:
 gh api repos/catachresis-colloquium/cytoville/rulesets
 ----
 
-The organisation's separate Actions allowlist blocks the external reusable
-Creusot workflow and three inherited support workflows. Branch protection
-does not resolve that organisation policy, and no organisation access policy
-was changed. See `docs/verification/RECEIPT.adoc` for the validation boundary.
-Base uses no bypass actors. The template's application IDs are not installed
-in this organisation, so GitHub rejected that inherited bypass list. All
-contributors follow the same pull-request policy here.
+The owner corrected the Actions allowlist on 2026-11-07. Proof CI now reaches
+the real prover; the remaining failure is the shared singleton-report parser,
+tracked in `hyperpolymath/cicd-suite#92`.
+
+`base.json` now declares the exact GitHub Actions contexts `budget / Creusot
+verdict` and `Rust standalone tools and workspace gate`, with strict checks
+and no bypass actors. The live Base ruleset (26720164) was updated to require
+them, but a subsequent API inspection returned 404 and listed only the four
+rulesets above. PRs #4 and #5 were merged by another actor before their proof
+runs passed. The checked-in payload therefore describes intended protection,
+not verified live enforcement. Reconcile that drift before claiming that a
+merge requires a successful production proof. This change does not recreate
+an externally removed live policy or add a bypass.
