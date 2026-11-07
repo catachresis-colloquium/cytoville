@@ -5,8 +5,45 @@ use cytoville_native::{Memory, Observation, decide};
 use enaction_trace::{Domain, Revision, Trace, TraceEvent, Trope, TropeId};
 use serde::{Deserialize, Serialize};
 
+pub mod research;
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct RivalSettings {
+    pub inject_weevil: bool,
+    /// 0: three decisions; 1: twelve; 2: the legacy eighty-decision budget.
+    pub capability: u8,
+    pub name: Option<String>,
+}
+impl Default for RivalSettings {
+    fn default() -> Self {
+        Self {
+            inject_weevil: true,
+            capability: 2,
+            name: None,
+        }
+    }
+}
+impl RivalSettings {
+    pub fn validate(&self) -> Result<(), String> {
+        if self.capability > 2 {
+            return Err("Unknown AI capability".into());
+        }
+        if let Some(name) = &self.name
+            && (name.trim().is_empty()
+                || name.chars().count() > 40
+                || name.chars().any(char::is_control))
+        {
+            return Err("AI name must contain 1–40 printable characters".into());
+        }
+        Ok(())
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Runtime {
+    #[serde(default)]
+    pub rival_settings: RivalSettings,
     pub content: Content,
     pub game: Game,
     pub memory: Memory,
@@ -20,6 +57,8 @@ pub const MAX_NATIVE_TICKS: u64 = 1_000_000;
 /// Mutable session state; immutable content is delivered during the handshake.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct RuntimeState {
+    #[serde(default)]
+    pub rival_settings: RivalSettings,
     pub game: Game,
     pub memory: Memory,
     pub ai_tick: u64,
@@ -28,6 +67,7 @@ pub struct RuntimeState {
 
 impl RuntimeState {
     pub fn validate(&self, content: &Content) -> Result<(), String> {
+        self.rival_settings.validate()?;
         validate_state(content, &self.game, self.ai_tick, &self.trace)
     }
 }
@@ -70,6 +110,7 @@ impl Runtime {
     ) -> Result<Self, String> {
         let game = turn::new_game(&content, specimen, scenario, difficulty, seed, multiplayer)?;
         Ok(Self {
+            rival_settings: RivalSettings::default(),
             content,
             game,
             memory: Memory {
@@ -81,6 +122,7 @@ impl Runtime {
         })
     }
     pub fn dispatch(&mut self, seat: usize, command: &Command) -> Result<(), String> {
+        self.rival_settings.validate()?;
         let mut next = self.clone();
         next.game = apply(&next.content, &next.game, seat, command)?;
         // Record accepted human commands too: multiplayer has no native rival
@@ -105,10 +147,29 @@ impl Runtime {
         Ok(())
     }
     pub fn validate(&self) -> Result<(), String> {
+        self.rival_settings.validate()?;
         validate_state(&self.content, &self.game, self.ai_tick, &self.trace)
+    }
+    /// Configure a fresh local game. Existing saves and server-owned games keep
+    /// their acknowledged configuration.
+    pub fn configure_rival(&mut self, settings: RivalSettings) -> Result<(), String> {
+        settings.validate()?;
+        if self.game.revision != 0 || self.game.multiplayer {
+            return Err("AI settings apply only to a new single-player game".into());
+        }
+        let mut next = self.clone();
+        if let Some(name) = &settings.name {
+            next.game.actors[1].name = name.clone();
+            next.game.looks[1].name = name.clone();
+        }
+        next.rival_settings = settings;
+        next.validate()?;
+        *self = next;
+        Ok(())
     }
     pub fn state(&self) -> RuntimeState {
         RuntimeState {
+            rival_settings: self.rival_settings.clone(),
             game: self.game.clone(),
             memory: self.memory,
             ai_tick: self.ai_tick,
@@ -117,6 +178,7 @@ impl Runtime {
     }
     pub fn into_state(self) -> RuntimeState {
         RuntimeState {
+            rival_settings: self.rival_settings,
             game: self.game,
             memory: self.memory,
             ai_tick: self.ai_tick,
@@ -125,6 +187,7 @@ impl Runtime {
     }
     pub fn apply_state(&mut self, state: RuntimeState) -> Result<(), String> {
         state.validate(&self.content)?;
+        self.rival_settings = state.rival_settings;
         self.game = state.game;
         self.memory = state.memory;
         self.ai_tick = state.ai_tick;
@@ -153,13 +216,16 @@ impl Runtime {
         id
     }
     fn run_rival(&mut self) -> Result<(), String> {
-        for _ in 0..80 {
+        let decisions = [3, 12, 80][self.rival_settings.capability as usize];
+        for _ in 0..decisions {
             if self.game.status != "playing" {
                 break;
             }
             let a = &self.game.actors[1];
             let other = &self.game.actors[0];
-            self.ai_tick += 1;
+            if self.rival_settings.inject_weevil {
+                self.ai_tick += 1;
+            }
             let near = a.location == other.location || a.location == "rift";
             let loc = &self.content.locations[&a.location];
             let obs = Observation {
@@ -178,7 +244,11 @@ impl Runtime {
                 contact: u32::from(near),
                 reserved: 0,
             };
-            let intent = decide(&obs, &mut self.memory)?;
+            let intent_action = if self.rival_settings.inject_weevil {
+                decide(&obs, &mut self.memory)?.action
+            } else {
+                0
+            };
             let stress_event = self.record(
                 Domain::Affective,
                 "oxidative-distress",
@@ -187,11 +257,15 @@ impl Runtime {
             );
             let motive = self.record(
                 Domain::Conative,
-                "weevil-intent",
-                intent.action as i32,
+                if self.rival_settings.inject_weevil {
+                    "weevil-intent"
+                } else {
+                    "baseline-intent"
+                },
+                intent_action as i32,
                 vec![stress_event],
             );
-            let Some((location, action)) = self.select(intent.action) else {
+            let Some((location, action)) = self.select(intent_action) else {
                 break;
             };
             self.record(Domain::BehaviouralSelection, &action.id, 1000, vec![motive]);

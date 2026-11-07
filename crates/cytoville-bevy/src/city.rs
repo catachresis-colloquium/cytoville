@@ -352,6 +352,7 @@ pub struct Motion([Option<Journey>; 2]);
 pub fn animate(
     time: Res<Time>,
     s: Res<super::Session>,
+    settings: Res<super::settings::Settings>,
     mut motion: ResMut<Motion>,
     mut markers: Query<(&CellMarker, &mut UiTransform), Without<Bubble>>,
     mut bubbles: Query<(&Bubble, &mut UiTransform), Without<CellMarker>>,
@@ -366,10 +367,17 @@ pub fn animate(
         ) + Vec2::new(if marker.0 == 0 { -3.0 } else { 3.0 }, 0.);
         target.x = target.x.clamp(1.0, 99.0);
         let journey = motion.0[marker.0].get_or_insert_with(|| Journey::new(target));
+        if settings.preferences.reduced_motion {
+            *journey = Journey::new(target);
+        }
         let current = journey.advance(target, time.delta_secs());
         transform.translation = bevy::ui::Val2::percent(current.x, current.y);
     }
-    let t = time.elapsed_secs_wrapped();
+    let t = if settings.preferences.reduced_motion {
+        0.
+    } else {
+        time.elapsed_secs_wrapped()
+    };
     for (bubble, mut transform) in &mut bubbles {
         transform.translation = bevy::ui::Val2::px(
             (t * 0.7 + bubble.0).sin() * 5.,

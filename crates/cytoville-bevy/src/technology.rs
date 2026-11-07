@@ -1,16 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 //! Player-facing research catalogue. Entries do not advertise executable backends.
-use super::{BG, Click, INK, MINT, PANEL, button, column, text};
+use super::{Click, INK, MINT, button, text};
 use bevy::prelude::*;
 use bevy::ui::InteractionDisabled;
 
-#[derive(Resource, Default)]
-pub struct Settings {
-    pub open: bool,
-    pub selected: usize,
-    pub contribute: bool,
-    pub notice: String,
-}
+use super::settings::Settings;
 
 pub struct Technology {
     pub name: &'static str,
@@ -87,47 +81,70 @@ pub const TECHNOLOGIES: &[Technology] = &[
 ];
 
 pub fn draw(root: &mut ChildSpawnerCommands, settings: &Settings) {
-    root.spawn(text("SETTINGS / FUTURE COMPUTING", 25., MINT));
-    root.spawn(text(
-        "Help shape what games can do next. Explore the research and help make it real.",
-        17.,
-        INK,
-    ));
-    root.spawn(text(
-        "Research catalogue · reviewed 7 November 2026 · no device scan or remote jobs",
-        14.,
-        INK,
-    ));
-    root.spawn(Node { column_gap: Val::Px(20.), width: Val::Percent(100.), ..default() }).with_children(|body| {
-        body.spawn(Node { width: Val::Percent(35.), ..column() }).with_children(|list| {
-            for (i, tech) in TECHNOLOGIES.iter().enumerate() {
-                list.spawn(button(Click::Technology(i), true)).with_child(text(format!("{}{}", if settings.selected == i { "● " } else { "" }, tech.name), 16., INK));
-            }
-        });
-        body.spawn((Node { width: Val::Percent(65.), padding: UiRect::all(Val::Px(18.)), ..column() }, BackgroundColor(PANEL))).with_children(|detail| {
-            let tech = &TECHNOLOGIES[settings.selected];
-            detail.spawn(text(tech.name, 24., MINT));
-            detail.spawn(text(tech.opportunity, 18., INK));
-            detail.spawn((button(Click::UnavailableTechnology, false), InteractionDisabled)).with_child(text("Enable · unavailable in this build", 18., Color::srgb(0.65, 0.7, 0.72)));
-            detail.spawn(text(tech.limitation, 17., INK));
-            detail.spawn(button(Click::TechnologyContribute, true)).with_child(text(if settings.contribute { "Back to overview" } else { "Learn and contribute →" }, 18., MINT));
-            if settings.contribute {
-                detail.spawn(text("HELP MAKE IT POSSIBLE", 17., MINT));
-                detail.spawn(text(tech.contribution, 17., INK));
-                detail.spawn(text("Use AI to explain a paper, draft a small experiment or generate test cases. Check the original sources and reproduce the result; include failures, tool versions and limitations in your contribution.", 16., INK));
-                detail.spawn(button(Click::TechnologySource, true)).with_child(text("Open research / technical source · L ↗", 16., MINT));
-                detail.spawn(button(Click::TechnologyProject, true)).with_child(text("Open project contribution guide · C ↗", 16., MINT));
-            }
-        });
+    let selected = settings.selected.clamp(7, 8);
+    root.spawn(Node {
+        column_gap: Val::Px(8.),
+        ..default()
+    })
+    .with_children(|row| {
+        for i in [7, 8] {
+            row.spawn(button(Click::Technology(i), true))
+                .with_child(text(
+                    format!(
+                        "{}{}",
+                        if selected == i { "● " } else { "" },
+                        TECHNOLOGIES[i].name
+                    ),
+                    16.,
+                    MINT,
+                ));
+        }
     });
-    root.spawn((Node { padding: UiRect::all(Val::Px(8.)), ..default() }, BackgroundColor(BG))).with_child(text("↑ / ↓ choose technology · Enter learn/contribute · Escape return. Links open your browser only when selected.", 14., INK));
-    root.spawn(button(Click::Settings, true)).with_child(text(
-        "← Return to game / menu",
-        18.,
-        MINT,
+    let tech = &TECHNOLOGIES[selected];
+    root.spawn(text(tech.opportunity, 16., INK));
+    root.spawn((
+        button(Click::UnavailableTechnology, false),
+        InteractionDisabled,
+    ))
+    .with_child(text(
+        "Experimental backend · not available in this build",
+        16.,
+        INK,
     ));
+    root.spawn(text(tech.limitation, 15., INK));
+    root.spawn(button(
+        Click::ResearchHarness,
+        settings.research_pending.is_none(),
+    ))
+    .with_child(text("Run local research harness · H", 16., MINT));
+    if !settings.research_summary.is_empty() {
+        root.spawn(text(&settings.research_summary, 15., INK));
+    }
+    root.spawn(button(Click::TechnologyContribute, true))
+        .with_child(text(
+            if settings.contribute {
+                "Hide research and contribution guide"
+            } else {
+                "Learn, contribute and support the research"
+            },
+            16.,
+            MINT,
+        ));
+    if settings.contribute {
+        root.spawn(text(tech.contribution, 15., INK));
+        root.spawn(text("AI can help explain a paper or draft an experiment. Check original sources and reproduce results; include tool versions and limitations.",14.,INK));
+        root.spawn(Node {
+            column_gap: Val::Px(8.),
+            ..default()
+        })
+        .with_children(|row| {
+            row.spawn(button(Click::TechnologySource, true))
+                .with_child(text("Research source · L ↗", 15., MINT));
+            row.spawn(button(Click::TechnologyProject, true))
+                .with_child(text("Contribute · C ↗", 15., MINT));
+        });
+    }
 }
-
 /// Only callers selecting a built-in catalogue link may launch the browser.
 pub fn open_source(selected: usize, project: bool) -> std::io::Result<()> {
     let url = if project {

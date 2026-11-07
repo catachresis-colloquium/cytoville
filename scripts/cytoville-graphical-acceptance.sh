@@ -31,7 +31,7 @@ wait_for() {
   return 1
 }
 launch() {
-  "$target/debug/cytoville-bevy" --seed 7 --smoke-seconds 600 "$@" > "$scratch/game.log" 2>&1 &
+  "$target/debug/cytoville-bevy" --seed 7 --smoke-seconds 600 --settings "$scratch/preferences.json" "$@" > "$scratch/game.log" 2>&1 &
   game_pid=$!
   if ! wait_for 'Bevy window' xdotool search --pid "$game_pid" --name '^CYTOVILLE'; then
     # Startup stderr has no private ticket/checkpoint contents. Surface it so
@@ -148,12 +148,43 @@ wait_for 'resumed graphical client can still command the host' jq -e \
 stop_game
 launch --play --technology-settings --save "$scratch/technology.json"
 key space # Settings must not advance the authoritative game.
-key Up # Wrap from CPU to reversible computing.
+key Up # Switch from quantum annealing to reversible computing.
 key Return # Open the contribution explanation without opening an external URL.
+key h # Bounded reference work runs separately from the UI and cannot mutate the game.
 shot 09-future-computing
+key Right # Accessibility; changing presentation must not change the game.
+key Return # High contrast.
+key Down
+key Return # Reduced motion.
+shot 10-accessibility
+key Right # Video.
+key Return # V-sync off.
+shot 11-video
+key Right # Game.
+key Return # Next game uses the baseline rival.
+shot 12-game-options
+key Right # Players.
+key Return # AI capability: thorough -> casual.
+key Down
+key Return # Edit name.
+key BackSpace BackSpace BackSpace BackSpace BackSpace
+xdotool type --clearmodifiers --delay 80 Ada
+key Return
+shot 13-players
+wait_for 'preferences saved from real settings input' jq -e \
+  '.high_contrast and .reduced_motion and (.vsync | not) and (.rival.inject_weevil | not) and .rival.capability == 0 and .rival.name == "Ada"' "$scratch/preferences.json"
+key Right
+shot 14-server
 key Escape
 key F5
 wait_for 'settings keyboard input preserves the game turn' jq -e '.game.turn == 1' "$scratch/technology.json"
 stop_game
-printf '%s\n' 'PASS: real Bevy input, offline save/reload, native rival, loopback TLS command and resume; research settings preserve the game turn.' \
+launch --play --save "$scratch/configured.json"
+key space
+key F5
+wait_for 'new game applies persisted rival settings' jq -e \
+  '.game.turn == 2 and .game.actors[1].name == "Ada" and .ai_tick == 0 and (.rival_settings.inject_weevil | not) and .rival_settings.capability == 0 and any(.trace.tropes[]; .kind == "baseline-intent")' "$scratch/configured.json"
+shot 15-configured-game
+stop_game
+printf '%s\n' 'PASS: real Bevy input, offline save/reload, native rival, loopback TLS command and resume; all settings tabs, presentation persistence and configured baseline rival.' \
   'Scope: 1440x960 X11; not a frame-rate, art-quality or accessibility certification.' | tee "$out/receipt.txt"
