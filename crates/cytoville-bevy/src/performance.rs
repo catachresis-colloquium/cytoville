@@ -12,9 +12,12 @@ use std::{
 
 static SAMPLES: OnceLock<Mutex<BTreeMap<&'static str, Vec<f64>>>> = OnceLock::new();
 static INVALID: AtomicBool = AtomicBool::new(false);
+static STARTED: OnceLock<Instant> = OnceLock::new();
+static EXIT_REQUESTED: OnceLock<Instant> = OnceLock::new();
 const LIMIT: usize = 6000;
 
 pub fn enable() {
+    let _ = STARTED.set(Instant::now());
     let _ = SAMPLES.set(Mutex::new(BTreeMap::new()));
 }
 
@@ -64,6 +67,15 @@ pub fn frame(
         return;
     }
     let now = Instant::now();
+    if previous.is_none()
+        && let Some(started) = STARTED.get()
+    {
+        // First app update, not first displayed frame or process launch time.
+        record(
+            "startup_to_first_update_ms",
+            started.elapsed().as_secs_f64() * 1000.,
+        );
+    }
     if let Some(last) = previous.replace(now) {
         *warmup += 1;
         if *warmup > 120 {
@@ -72,6 +84,22 @@ pub fn frame(
                 now.duration_since(last).as_secs_f64() * 1000.0,
             );
         }
+    }
+}
+
+pub fn exit_requested(mut exits: bevy::prelude::MessageReader<bevy::app::AppExit>) {
+    if SAMPLES.get().is_some() && exits.read().next().is_some() {
+        let _ = EXIT_REQUESTED.set(Instant::now());
+    }
+}
+
+pub fn finished() {
+    if let Some(requested) = EXIT_REQUESTED.get() {
+        // Excludes later process teardown after App::run returns.
+        record(
+            "exit_request_to_app_return_ms",
+            requested.elapsed().as_secs_f64() * 1000.,
+        );
     }
 }
 
