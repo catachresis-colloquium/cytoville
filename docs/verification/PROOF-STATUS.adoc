@@ -34,3 +34,11 @@ builds Creusot 0.13.0 from upstream commit
 `318615be3b8bbc60d1f6d52469ba5c0bdebed4f1`, using its pinned
 nightly-2026-06-22 and installer, outside the inherited Guix/container scaffold.
 The game-specific reproducible proof container remains to be completed.
+
+The proposed correction is backported as signed commit
+`1084f47cc64090a7acc5f719a65fec48c1705e06` in cicd-suite. Compared with the
+previous Cytoville pin, only the parser and its regression tests change; the
+workflow and toolchain action pins are identical. The caller and lockfile now
+select that backport. Its exact reusable-workflow reference must be admitted
+by the organisation policy before the hosted run can validate the correction.
+This candidate has not yet supplied a new caller-proof receipt.

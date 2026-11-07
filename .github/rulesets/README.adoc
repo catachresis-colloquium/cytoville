@@ -34,10 +34,14 @@ The owner corrected the Actions allowlist on 2026-11-07. Proof CI now reaches
 the real prover; the remaining failure is the shared singleton-report parser,
 tracked in `hyperpolymath/cicd-suite#92`.
 
-`base.json` now declares the exact GitHub Actions contexts `budget / Creusot
-verdict` and `Rust standalone tools and workspace gate`, with strict checks
-and no bypass actors. The live Base ruleset (26720164) was updated to require
-them, but a subsequent API inspection returned 404 and listed only the four
+`base.json` declares `Production resource proof acceptance` and `Rust standalone
+tools and workspace gate`, with strict checks and no bypass actors. The first
+is a local, statically verifiable producer that requires the entire shared
+proof job to succeed; failure, cancellation and skipping cannot pass it.
+Both contexts are mapped in `.machine_readable/required-contexts-allow.txt`.
+The live Base ruleset (26720164) was previously updated to require the shared
+`budget / Creusot verdict` and Rust contexts, but a subsequent API inspection
+returned 404 and listed only the four
 rulesets above. PRs #4 and #5 were merged by another actor before their proof
 runs passed. The checked-in payload therefore describes intended protection,
 not verified live enforcement. Reconcile that drift before claiming that a
