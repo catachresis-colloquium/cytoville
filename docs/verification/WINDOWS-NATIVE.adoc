@@ -1,0 +1,35 @@
+= Native Windows acceptance
+// SPDX-License-Identifier: CC-BY-SA-4.0
+
+== Rust and Zig boundary
+
+The Cargo native build selects Zig's MSVC ABI explicitly for an MSVC Rust
+target. Zig's default Windows target selected GNU conventions: the observed
+link failures involved its bundled compiler runtime, `___chkstk_ms` and
+`LdrRegisterDllNotification`. For the Rust/MSVC host, the static archive omits
+Zig's duplicate compiler runtime and uses Rust's compiler builtins instead.
+The Zig standalone build retains compiler-runtime bundling by default.
+
+Local acceptance on 2026-11-07 used Rust 1.99.1, Zig 0.16.0 and the Microsoft
+x64 linker 14.51.36231. The release Bevy executable linked and rendered.
+All three release `cytoville-runtime` integration tests passed on Windows:
+real-kernel replay/save/resume, terminal outcomes across specimens/scenarios,
+and multiplayer seat handoff without local AI. These exercise the actual
+pinned Evil Weevil kernel through the Rust/Zig boundary.
+
+The Windows CI job installs checksum-verified Zig and pinned Rust, then runs
+those same release integration tests. The required workspace gate explicitly
+rejects any Windows result other than success, including cancellation/skipping.
+This job checks the native boundary; it is not a hosted Windows GPU test.
+
+== Presentation boundary
+
+Normal play uses an optimised release build. Windows starts maximised so the
+1440x960 logical default does not extend beyond a high-DPI laptop work area.
+The window retains ordinary resize/restore/close controls.
+
+Opt-in profiling prints the selected adapter locally alongside the numerical
+receipt. Graphical acceptance still distinguishes render correctness, real
+input/state transitions, and measured performance. An idle frame sample is
+not click-to-response latency, and a single-device pass is not general
+accessibility or art-quality acceptance. Hosting remains local.

@@ -234,6 +234,15 @@ fn main() {
             .chain(),
     );
     soundtrack::install(&mut app);
+    #[cfg(target_os = "windows")]
+    app.add_systems(Startup, |mut windows: Query<&mut Window>| {
+        // The 1440x960 logical default exceeds many high-DPI laptop desktops.
+        // Let the window manager fit the work area while retaining window controls.
+        for mut window in &mut windows {
+            window.set_maximized(true);
+        }
+    });
+    app.add_systems(Startup, performance::adapter);
     app.add_systems(First, performance::frame);
     app.run();
     if let Some(path) = profile

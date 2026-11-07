@@ -18,9 +18,19 @@ fn main() {
     {
         panic!("Initialise the pinned kernel: git submodule update --init --recursive");
     }
-    let status = Command::new(env::var("ZIG").unwrap_or_else(|_| "zig".into()))
+    let mut command = Command::new(env::var("ZIG").unwrap_or_else(|_| "zig".into()));
+    command
         .current_dir(root.join("src/interface/ffi"))
-        .args(["build", "-Doptimize=ReleaseSafe", "--cache-dir"])
+        .args(["build", "-Doptimize=ReleaseSafe"]);
+    if env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("msvc") {
+        let arch = env::var("CARGO_CFG_TARGET_ARCH").expect("Cargo target architecture");
+        command.arg(format!("-Dtarget={arch}-windows-msvc"));
+        // Rust supplies compiler_builtins to the final executable. Zig 0.16's
+        // bundled compiler_rt COFF object is rejected by Microsoft's linker.
+        command.arg("-Dbundle-compiler-rt=false");
+    }
+    let status = command
+        .arg("--cache-dir")
         .arg(out.join("zig-cache"))
         .arg("--prefix")
         .arg(&out)

@@ -18,6 +18,15 @@ pub fn enable() {
     let _ = SAMPLES.set(Mutex::new(BTreeMap::new()));
 }
 
+pub fn adapter(info: bevy::prelude::Res<bevy::render::renderer::RenderAdapterInfo>) {
+    if SAMPLES.get().is_some() {
+        eprintln!(
+            "Cytoville profile adapter: {} ({:?}, {:?})",
+            info.name, info.device_type, info.backend
+        );
+    }
+}
+
 pub fn record(name: &'static str, milliseconds: f64) {
     if let Some(samples) = SAMPLES.get() {
         let Ok(mut samples) = samples.lock() else {
