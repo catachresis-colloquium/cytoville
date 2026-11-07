@@ -284,9 +284,9 @@ lint:
 # RUN & EXECUTE
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Run the application (N/A for a library; wire a "run" step or executable to enable)
+# Normal play uses the same optimised profile as `just build`.
 run *args:
-    cargo run -p cytoville-bevy -- {{args}}
+    cargo run --release --locked -p cytoville-bevy -- {{args}}
 
 # Regenerate the ABI from the total Idris2 source.
 abi-generate:

@@ -38,6 +38,11 @@ just build
 just run
 ----
 
+Normal play uses the optimised release profile. The first build compiles Bevy
+and may take substantially longer than later launches. For code iteration,
+`cargo run -p cytoville-bevy` explicitly selects the debug profile; do not use
+debug/software-renderer timings as hardware release performance claims.
+
 Choose a specimen and scenario, then a district and action. Travel spends ATP.
 Nutrition and stress affect growth and the next cycle's energy. Space ends your
 turn; F5 saves and F9 loads. Accepted solo commands autosave. Escape opens the
@@ -48,14 +53,14 @@ for validated UMS content.
 
 [source,bash]
 ----
-cargo build -p cytoville-runtime
+cargo build --release --locked -p cytoville-runtime
 cd server
-CYTOVILLE_WORKER=../target/debug/cytoville-server mix run --no-halt
+CYTOVILLE_WORKER=../target/release/cytoville-server mix run --no-halt
 ----
 
-In another terminal, run `cargo run -p cytoville-bevy -- --host --session pond`.
+In another terminal, run `just run --host --session pond`.
 Give the displayed invitation key to the second player, who runs
-`cargo run -p cytoville-bevy -- --join --session pond --key INVITATION`.
+`just run --join --session pond --key INVITATION`.
 The server defaults to loopback port 4280. This is a private-host protocol;
 internet deployment needs an authenticated encrypted transport in front of it.
 See link:docs/architecture/MULTIPLAYER.adoc[protocol and operational limits].
@@ -73,7 +78,7 @@ cargo run -p cytoville-ums -- init source.json
 cargo run -p cytoville-ums -- validate source.json
 cargo run -p cytoville-ums -- preview source.json 7
 cargo run -p cytoville-ums -- compile source.json . cytoville-package.json
-cargo run -p cytoville-bevy -- --package cytoville-package.json
+just run --package cytoville-package.json
 ----
 
 link:profiles/cytoville/v1/descriptor.json[The UMS profile] describes districts,

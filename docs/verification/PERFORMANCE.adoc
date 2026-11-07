@@ -19,6 +19,9 @@ summaries only, with no game state, invitation keys or connection tickets.
 
 == Reproduce
 
+`just run` uses the release profile for normal play, matching `just build`.
+Debug builds remain available through an explicit `cargo run` for development.
+
 In a private X11 display (or `xvfb-run`), set `CYTOVILLE_PROFILE_OUTPUT` and run
 `bash scripts/cytoville-profile.sh`. The default builds the release client.
 `CYTOVILLE_PROFILE_BINARY` may select an existing build; record its profile.
