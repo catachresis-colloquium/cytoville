@@ -1,0 +1,155 @@
+// SPDX-License-Identifier: CC-BY-SA-4.0
+= Future computing, studio operations and research participation
+:revdate: 2026-11-07
+
+== Product intent and implementation boundary
+
+The owner wants games to make emerging computing visible and invite players to
+help develop it. Cytoville now has a Settings / Future computing catalogue:
+nine technology groups, disabled activation controls, explanations and an
+active Learn and contribute route. It opens research and project links only
+after an explicit player action. It does not probe devices, download drivers,
+submit jobs, collect telemetry or activate experimental backends.
+
+The ordinary CPU game, Bevy rendering, audio and TLS are existing capabilities;
+their presence is not a claim that the optional specialist backends exist.
+The catalogue is an implementation of discovery and participation, not hardware
+support. Research information is dated and bundled, not automatically current.
+
+Do not label an unimplemented backend as a deficient computer. Future support
+reports must distinguish these states and retain their evidence:
+
+[cols="1,3"]
+|===
+|State |Player explanation
+|Not implemented |This game build does not yet implement this technology.
+|Not assessed |We have not checked this device's compatibility.
+|Driver unavailable |The required supported driver/runtime is unavailable.
+|Hardware unsupported |Your computer specification cannot support this technology at this time; name the probed requirement and evidence.
+|Experimental |Available for a named workload with documented limitations.
+|Ready |Validated operation, backend, device, driver and resource limits.
+|===
+
+The current catalogue reports the first two states in prose. It cannot produce
+the hardware-unsupported conclusion. Learning remains available when activation
+is disabled. A future probe must be bounded, cached and off the UI thread;
+unsupported features must never delay startup or require a purchase to play.
+
+== Shared runtime ownership
+
+Use Enaction's accepted
+https://github.com/catachresis-colloquium/enaction-engine/blob/main/docs/decisions/0020-operation-first-coprocessor-runtime.adoc[operation-first accelerator ADR].
+It distinguishes authoritative exact computation, advisory results and remote
+jobs. A named device family is not an implementation. Its support ladder runs
+from declaration through conformance, resilience and benchmarks to production
+support. Existing scalar/native operations are a starting point, not evidence
+of GPU, TPU, FPGA or QPU support in Cytoville.
+
+Keep the Idris2 ABI, generated C declarations, Zig implementations and Rust
+bindings aligned. Preserve the existing Elixir Port process isolation. Numeric
+BEAM adapters must follow the ADR's SNIFS boundary rather than invent a direct
+NIF. Approximate or remote work cannot silently replace authoritative replay.
+Fallback decisions must be explicit before execution; errors are not permission
+to silently switch an authoritative computation.
+
+First implementations should have one actual consumer, a CPU reference, bounded
+buffers, failure/cancellation behaviour and complete workload measurements.
+Do not fork a second studio accelerator framework inside Cytoville.
+
+== Candidate workloads, not promised speedups
+
+[cols="1,2,2"]
+|===
+|Family |Candidate work |Acceptance evidence
+|CPU / SIMD |Batched numeric simulation |Runtime ISA checks, portable fallback, equal outputs, end-to-end measurements
+|GPU |Large field/batch computations |Include transfers and queueing; rendering already uses a graphics backend
+|NPU / TPU |Optional learned advisers/content tools |An actual model, supported operators, bounded memory and independent result checks
+|FPGA |Measured specialist kernels |A real board, driver, bitstream, reference comparison and resource/energy results
+|Physics / maths |Operation-specific solvers |Numerical error contract and deterministic authoritative boundary
+|Audio / DSP / media |Synthesis or media workloads |Buffer deadlines, audible glitches, device-specific latency
+|Crypto / I/O / DPU |Established provider/server offload |Maintained crypto, key isolation, realistic server-load results
+|Quantum annealing |Offline balancing or placement advice |QUBO/Ising contract, classical baseline, feasibility validation, asynchronous jobs
+|Reversible classical |Small reversible kernels |Inverse laws, ancilla/garbage accounting, hardware-specific energy measurements
+|===
+
+OpenVINO's
+https://docs.openvino.ai/2026/about-openvino/release-notes-openvino/system-requirements.html[requirements]
+illustrate why model/runtime/device support must be explicit. CPU marketing
+families such as Xeon and i9 are not instruction-set contracts.
+
+Quantum annealing involves programming, queues, anneal/readout and network
+latency, as documented by
+https://docs.dwavequantum.com/en/latest/quantum_research/operation_timing.html[D-Wave].
+Start with a bounded local reference or simulator, labelled as such. A physical
+provider needs separate implementation and validation. No cloud jobs are
+authorised by visiting the catalogue; hosting remains local.
+
+For reversible classical computing, begin with a kernel/IR contract and small
+inverse tests. Physical energy recovery requires appropriate circuitry and
+clocking: reversible software or an undo log does not make an ordinary CPU
+adiabatic. See
+https://www.sandia.gov/news/publications/hpc-annual-reports/article/stretching-the-thermodynamic-limits-of-hpc-efficiency/[Sandia's research overview]
+and
+https://www.sandia.gov/app/uploads/sites/210/2022/06/Frank-ICRC-preprint-0v6.pdf[the associated research preprint].
+An OS kernel rewrite is not a prerequisite for a user-space experimental
+operation adapter. Physical acceleration and energy claims need actual hardware.
+
+== Game Server Admin
+
+The inspected
+https://github.com/catachresis-colloquium/game-server-admin/blob/main/docs/developer/GAME-PROFILE-CONTRACT.adoc[GSA game-profile contract]
+is a draft fixture contract, not a live universal adapter. Do not extend the
+retired A2ML inventory or claim its JSON fixture is wired to the GUI, registry,
+ABI or deployment system.
+
+Proposed first integration: a read-only Cytoville status adapter with versioned,
+optional capabilities, coarse session health and package versions. Keep secrets
+out of projections and distinguish reported health from independently verified
+health. Follow with actual backup/restore and lifecycle operations only when
+their semantics and authorisation are implemented and tested. Do not advertise
+pause/drain/restart merely because a schema can name them.
+
+GSA should offer a generic foundation plus enhanced per-game adapters. Universal
+extensibility does not imply knowledge of every game's private protocol. Game
+authority must survive GSA being absent; UMS remains the owner of content/profile
+contracts. No GSA source or live adapter is changed by this catalogue work.
+
+== Mathesis applications to investigate
+
+https://github.com/hyperpolymath/mathesis[Mathesis] is a discovery catalogue,
+not certification of these games. The following are proposed applications of
+the inspected home projects, not proofs already applied to Cytoville or GSA:
+
+* https://github.com/hyperpolymath/epistemic-types[Epistemic types]: distinguish
+  reported, stale, observed and verified state in administration and async jobs.
+* https://github.com/hyperpolymath/echo-types[Echo types]: specify information
+  retained or lost across save migrations and dashboard projections.
+* https://github.com/hyperpolymath/resource-algebra[Resource algebra],
+  https://github.com/hyperpolymath/tropical-types[tropical types] and
+  https://github.com/hyperpolymath/occupancy-types[occupancy types]: separate
+  critical-path latency, live memory, buffer limits and information loss.
+  Formal grades are not measured milliseconds or joules without a cost model.
+* https://github.com/hyperpolymath/choreographic-types[Choreographic types]:
+  investigate command/acknowledgement and reconnect protocols within the
+  project's proved fragment, not an assumed proof of the whole Elixir service.
+* https://github.com/hyperpolymath/secret-types[Secret types]: investigate
+  role projections and log confidentiality; this does not replace authentication,
+  cryptography or timing-channel analysis.
+
+Protocol-squisher is terminated; do not reuse it as a universal adapter promise.
+Accessibility still needs keyboard/focus, scalable text, non-colour cues,
+reduced-motion options and assistive-technology tests. A finite UI state model
+may help test reachability; it cannot certify the whole user experience.
+
+== Participation
+
+Players can ask vendors and research funders for open interfaces, accessible
+research hardware, reproducible measurements and long-term driver support.
+They can contribute benchmark fixtures, translations, accessible explanations,
+reference implementations and independently checked failures as well as successes.
+Do not automate lobbying or submit messages on a player's behalf.
+
+AI can explain a paper, draft an experiment or suggest tests. Contributions
+must cite original sources and disclose methods, tool versions and limitations;
+generated proofs and performance claims need independent checking. Link readers
+to evidence rather than implying hardware purchases guarantee support.

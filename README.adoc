@@ -86,6 +86,16 @@ organelles, courses and cell-cycle quests. It imposes no platformer geometry,
 gravity, jumping or horizontal camera assumptions.
 See link:docs/architecture/UMS.adoc[UMS integration].
 
+== Future computing
+
+Open Settings to explore specialist computing, quantum annealing and reversible
+classical computing. Optional activation controls remain disabled until a real
+backend is implemented and validated; the explanation and Learn and contribute
+pages remain available. This is a dated research catalogue, not a hardware scan
+or a claim of implemented acceleration. See
+link:docs/architecture/FUTURE-COMPUTING.adoc[the implementation and research map]
+and link:docs/contributing.adoc[ways to contribute].
+
 == Verification and status
 
 `just test` runs rules/runtime/profile tests, the real Zig boundary tests, Idris

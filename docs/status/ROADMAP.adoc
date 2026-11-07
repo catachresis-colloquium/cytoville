@@ -32,6 +32,24 @@ contract, Elixir two-player server and UMS package adapter form the native path.
 
 No item on this list is represented as completed verification.
 
+== Future computing and responsiveness follow-up, 2026-11-07
+
+* Implemented a local Settings / Future computing research catalogue with nine
+  technology groups, disabled activation, explanations and opt-in source links.
+  No specialist backend or hardware probe is represented as implemented.
+* Added a regression check that disabled activation and settings keyboard input
+  cannot advance the game. Native DX12 rendering of the catalogue was inspected.
+* Replaced the inherited placeholder contribution guide with Cytoville-specific
+  build, research, accessibility and evidence guidance.
+* Recorded proposed shared Enaction integration, GSA capabilities and Mathesis
+  applications in docs/architecture/FUTURE-COMPUTING.adoc. GSA live adapters,
+  quantum solvers and reversible energy-recovery backends remain unimplemented.
+* The owner reports pervasive input/window/startup/shutdown slowness. Application
+  update cadence does not establish click-to-display response. PresentMon 2.6.0
+  refused ETW capture with access denied; no Windows permissions were changed.
+  Added scoped startup/exit timings and optional queue/audio diagnostic switches.
+  Root cause and a validated responsiveness fix remain open.
+
 == Functional acceptance on 2026-11-07
 
 The bounded X11 graphical journey and loopback TLS/native-rival reconnect passed
