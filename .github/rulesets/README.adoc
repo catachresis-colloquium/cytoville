@@ -30,9 +30,9 @@ from a checked-in payload:
 gh api repos/catachresis-colloquium/cytoville/rulesets
 ----
 
-The owner corrected the Actions allowlist on 2026-11-07. Proof CI now reaches
-the real prover; the remaining failure is the shared singleton-report parser,
-tracked in `hyperpolymath/cicd-suite#92`.
+The owner corrected the Actions allowlist on 2026-11-07. Hosted proof run
+42365155854 passed with the singleton-report parser backport tracked in
+`hyperpolymath/cicd-suite#92`.
 
 `base.json` declares `Production resource proof acceptance` and `Rust standalone
 tools and workspace gate`, with strict checks and no bypass actors. The first
@@ -50,3 +50,10 @@ ruleset 26753151. API readback verified active enforcement, both exact required
 contexts, strict checks and an empty bypass list. This enforces the owner's
 instruction that merges wait for successful checks. Recheck the live API before
 merging: a checked-in payload alone cannot establish continuing enforcement.
+
+Subsequent inspection found 26753151 absent, and PR #7 had merged at 10:26 UTC
+before its Rust run completed. After the hosted proof passed, the same canonical
+payload was restored as Base 26753832. API readback again verified active
+enforcement, both exact required contexts, strict checks and no bypass actors.
+The organisation audit log was inaccessible (404), so no actor attribution is
+claimed for the removals. Repeated external removal remains a governance risk.

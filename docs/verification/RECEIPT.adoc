@@ -44,7 +44,7 @@ proof claim. CI results are available in the repository's Actions history.
 Hosted Rust/native/Idris/Elixir CI passed at game commit
 `7174c86e527ead50568f790c1b4a1351c3a25eec` (Actions run `42273537091`).
 
-Hosted proof execution is blocked by the organisation's Actions allowlist:
+At the time of this initial receipt, hosted proof execution was blocked by the organisation's Actions allowlist:
 GitHub rejects `hyperpolymath/cicd-suite/.github/workflows/creusot-gate.yml` at
 the pinned commit before creating any jobs. The local proof above is executed
 evidence; it is not a claim of a green hosted proof job. An organisation owner
@@ -58,3 +58,21 @@ The game boundary tests replace the template's obsolete owned-string API tests.
 
 No whole-game formal correctness, production internet security, durable hosted
 multiplayer or Windows/macOS release certification is asserted.
+
+== Hosted production proof, 2026-11-07
+
+https://github.com/catachresis-colloquium/cytoville/actions/runs/42365155854[Run 42365155854]
+passed at source `1d4a08ecf80d9fc53c9c96b958557ff947253d1c`, using the corrected
+shared gate `1084f47cc64090a7acc5f719a65fec48c1705e06`, Creusot 0.14.0 and
+nightly-2026-08-03.
+
+The deliberately false control reported one unproved file. The true control
+reported `Proved (verif/creusot_control_passing_rlib/planted_must_pass.coma)`;
+the selected production crate reported `Proved (3 files)`. The verdict recorded
+both controls passed, proof started and completed, 1/1 selected crates attempted
+and completed, and exit code 0. Source-detected trusted axioms: 0.
+The local `Production resource proof acceptance` job also passed.
+
+The scope is the contracts of `spend`, `take_up_to` and `other_seat`, with the
+translation/solver trust boundary described above. Renderer changes are outside
+this proof scope. The run does not establish whole-game correctness.

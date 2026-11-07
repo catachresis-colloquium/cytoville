@@ -14,8 +14,8 @@
 |proven
 |Creusot 0.13.0 discharged all three function verification files in `crates/cytoville-budget/src/lib.rs`: checked spending, bounded transfer conservation, and the other-seat calculation. The game calls this crate directly. A deliberately false postcondition was rejected. See `RECEIPT.adoc` for execution evidence and trust boundary.
 |Current Creusot 0.14 production workflow
-|open
-|The organisation allowlist is resolved. Run 42356826634 stopped in the shared harness: a successful single-file positive-control report was not recognised. No caller proof was performed. `hyperpolymath/cicd-suite#92` proposes the source correction; stand-in regression success is not a formal-proof receipt. The historical 0.13 receipt is not relabelled as a 0.14 result.
+|proven
+|Run 42365155854 at game revision `1d4a08ecf80d9fc53c9c96b958557ff947253d1c` passed both controls and proved three verification files for `spend`, `take_up_to` and `other_seat` in the selected `cytoville-budget` crate. The final acceptance gate passed. This is a new hosted Creusot 0.14 receipt, separate from the historical 0.13 receipt; the rest of the game is outside this proof scope.
 |Rules, replay, packages and multiplayer
 |tested-only
 |Differential fixtures: 63 specimen/scenario/difficulty starts and 378 commands. Action boundaries, prerequisites, save replay, real native traces and two TCP clients exercise bounded cases.
@@ -39,6 +39,9 @@ The proposed correction is backported as signed commit
 `1084f47cc64090a7acc5f719a65fec48c1705e06` in cicd-suite. Compared with the
 previous Cytoville pin, only the parser and its regression tests change; the
 workflow and toolchain action pins are identical. The caller and lockfile now
-select that backport. Its exact reusable-workflow reference must be admitted
-by the organisation policy before the hosted run can validate the correction.
-This candidate has not yet supplied a new caller-proof receipt.
+select that backport. The owner admitted the exact reusable-workflow reference
+on 2026-11-07. Hosted run 42365155854 validated the corrected singleton parser
+with a real successful control, rejected the deliberately false control, and
+completed the caller proof. The canonical upstream proposal remains
+`hyperpolymath/cicd-suite#92`; this receipt does not claim upstream merge or
+validation against a second repository.

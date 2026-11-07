@@ -6,6 +6,51 @@ use bevy::{
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
 use cytoville_core::{Actor, Look};
+#[derive(PartialEq)]
+struct Appearance {
+    specimen: String,
+    phase: String,
+    organelles: Vec<String>,
+    membrane: String,
+    accent: String,
+    pattern: String,
+}
+impl Appearance {
+    fn of(a: &Actor, look: &Look) -> Self {
+        Self {
+            specimen: a.specimen.clone(),
+            phase: a.phase.clone(),
+            organelles: a.organelles.clone(),
+            membrane: look.membrane.clone(),
+            accent: look.accent.clone(),
+            pattern: look.pattern.clone(),
+        }
+    }
+}
+/// Keep only the two current appearances. Travel, names and resource changes do
+/// not rerasterize or upload an unchanged 256×256 texture.
+#[derive(Resource, Default)]
+pub struct Cache([Option<(Appearance, Handle<Image>)>; 2]);
+impl Cache {
+    pub fn get(
+        &mut self,
+        seat: usize,
+        a: &Actor,
+        look: &Look,
+        images: &mut Assets<Image>,
+    ) -> Handle<Image> {
+        let key = Appearance::of(a, look);
+        let slot = &mut self.0[seat];
+        if let Some((previous, handle)) = slot
+            && *previous == key
+        {
+            return handle.clone();
+        }
+        let handle = images.add(image(a, look));
+        *slot = Some((key, handle.clone()));
+        handle
+    }
+}
 fn rgb(s: &str, fallback: [u8; 3]) -> [u8; 3] {
     let s = s.trim_start_matches('#');
     if s.len() != 6 {
@@ -133,4 +178,39 @@ pub fn image(a: &Actor, look: &Look) -> Image {
         TextureFormat::Rgba8UnormSrgb,
         RenderAssetUsages::default(),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn cache_ignores_gameplay_fields_but_tracks_visible_appearance() {
+        let rt = cytoville_runtime::Runtime::new(
+            cytoville_core::Content::builtin(),
+            "euglena",
+            "fresh-daughter",
+            "standard",
+            7,
+            false,
+        )
+        .unwrap();
+        let mut actor = rt.game.actors[0].clone();
+        let mut look = rt.game.looks[0].clone();
+        let mut cache = Cache::default();
+        let mut images = Assets::default();
+        let original = cache.get(0, &actor, &look, &mut images);
+        actor.location = "university".into();
+        actor.atp -= 1;
+        actor.name = "Renamed".into();
+        look.name = "Renamed".into();
+        assert_eq!(original, cache.get(0, &actor, &look, &mut images));
+        look.pattern = "spots".into();
+        let patterned = cache.get(0, &actor, &look, &mut images);
+        assert_ne!(original, patterned);
+        actor.phase = "G2".into();
+        let divided = cache.get(0, &actor, &look, &mut images);
+        assert_ne!(patterned, divided);
+        actor.organelles.push("vacuole".into());
+        assert_ne!(divided, cache.get(0, &actor, &look, &mut images));
+    }
 }
