@@ -183,7 +183,7 @@ fn main() {
         .and_then(|s| s.parse::<u64>().ok())
         .map(|n| Instant::now() + std::time::Duration::from_secs(n));
     let mut app = App::new();
-    app.add_plugins(DefaultPlugins.set(WindowPlugin {
+    let plugins = DefaultPlugins.set(WindowPlugin {
         primary_window: Some(Window {
             title: "CYTOVILLE · Biofilm Metropolis".into(),
             resolution: (1440, 960).into(),
@@ -195,62 +195,69 @@ fn main() {
             ..default()
         }),
         ..default()
-    }))
-    .insert_resource(ClearColor(BG))
-    .init_resource::<portrait::Cache>()
-    .init_resource::<city::Artwork>()
-    .init_resource::<city::Motion>()
-    .insert_resource(technology::Settings {
-        open: args.contains(&"--technology-settings".into()),
-        ..default()
-    })
-    .insert_resource(Session {
-        runtime,
-        network,
-        menu,
-        dirty: true,
-        specimen: 0,
-        scenario: 0,
-        difficulty: 1,
-        seed,
-        page: 0,
-        message,
-        save: arg("--save")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| PathBuf::from("cytoville-save.json")),
-        clock: FixedStep::from_hz(30.0),
-        visual_phase: 0.0,
-        name_edit: None,
-        inspect: false,
-        smoke_until,
-    })
-    .add_systems(
-        Startup,
-        |mut commands: Commands, mut fonts: ResMut<Assets<Font>>| {
-            let font =
-                Font::from_bytes(include_bytes!("../../../assets/fonts/DejaVuSans.ttf").to_vec());
-            let _ = FONT.set(fonts.add(font));
-            commands.spawn(Camera2d);
-        },
-    )
-    .insert_resource(Capture {
-        path: arg("--screenshot").map(PathBuf::from),
-        frames: 0,
-    })
-    .add_observer(interact)
-    .add_systems(
-        Update,
-        (
-            keyboard,
-            network_updates,
-            render,
-            animate,
-            city::animate,
-            button_feedback,
-            capture,
+    });
+    let plugins = if args.contains(&"--no-audio-probe".into()) {
+        plugins.disable::<bevy::audio::AudioPlugin>()
+    } else {
+        plugins
+    };
+    app.add_plugins(plugins)
+        .insert_resource(ClearColor(BG))
+        .init_resource::<portrait::Cache>()
+        .init_resource::<city::Artwork>()
+        .init_resource::<city::Motion>()
+        .insert_resource(technology::Settings {
+            open: args.contains(&"--technology-settings".into()),
+            ..default()
+        })
+        .insert_resource(Session {
+            runtime,
+            network,
+            menu,
+            dirty: true,
+            specimen: 0,
+            scenario: 0,
+            difficulty: 1,
+            seed,
+            page: 0,
+            message,
+            save: arg("--save")
+                .map(PathBuf::from)
+                .unwrap_or_else(|| PathBuf::from("cytoville-save.json")),
+            clock: FixedStep::from_hz(30.0),
+            visual_phase: 0.0,
+            name_edit: None,
+            inspect: false,
+            smoke_until,
+        })
+        .add_systems(
+            Startup,
+            |mut commands: Commands, mut fonts: ResMut<Assets<Font>>| {
+                let font = Font::from_bytes(
+                    include_bytes!("../../../assets/fonts/DejaVuSans.ttf").to_vec(),
+                );
+                let _ = FONT.set(fonts.add(font));
+                commands.spawn(Camera2d);
+            },
         )
-            .chain(),
-    );
+        .insert_resource(Capture {
+            path: arg("--screenshot").map(PathBuf::from),
+            frames: 0,
+        })
+        .add_observer(interact)
+        .add_systems(
+            Update,
+            (
+                keyboard,
+                network_updates,
+                render,
+                animate,
+                city::animate,
+                button_feedback,
+                capture,
+            )
+                .chain(),
+        );
     if !args.contains(&"--no-audio-probe".into()) {
         soundtrack::install(&mut app);
     }
