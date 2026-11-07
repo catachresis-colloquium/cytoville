@@ -5,6 +5,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 [dependencies]
-creusot-std.workspace = true
+# Keep the proof tool's exact version visible to the shared gate and its controls.
+creusot-std = "=0.13.0"
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ["cfg(creusot)"] }
