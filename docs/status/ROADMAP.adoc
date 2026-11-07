@@ -49,6 +49,14 @@ No item on this list is represented as completed verification.
   refused ETW capture with access denied; no Windows permissions were changed.
   Added scoped startup/exit timings and optional queue/audio diagnostic switches.
   Root cause and a validated responsiveness fix remain open.
+* Fixed district illustration hit targets, same-destination feedback without
+  another command, marker placement at the actual landmark and a bounded visual
+  journey that does not teleport after one delayed frame. Added rerouting/hitch
+  tests and a graphical picture-click/repeat-click check; the full local journey
+  passes. This addresses the identified map defects, not all reported latency.
+* The owner's clarified tabbed Settings and actual accelerator implementation
+  scope is recorded in SETTINGS-AND-ACCELERATION.adoc. The large research catalogue
+  is intermediate and must not be mistaken for completion of that scope.
 
 == Functional acceptance on 2026-11-07
 
