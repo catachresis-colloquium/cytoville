@@ -65,6 +65,12 @@ No item on this list is represented as completed verification.
   is claimed. Exact scope and remaining hardware/GSA/accessibility/player work
   are recorded in SETTINGS-AND-ACCELERATION.adoc; this does not complete the
   owner's broader accelerator request.
+* Follow-up inspection separates the working Elixir Port/native boundary from
+  the unintegrated SNIF and unified-adapter paths. The proposed next milestone
+  combines responsiveness, one district/encounter and a measured accelerator
+  consumer; details are in architecture/FUTURE-COMPUTING.adoc. Added separate
+  simulation/serialisation/write/replace timings to investigate the observed
+  command stall. Removed scanner-flagged panic paths from the research harness.
 
 == Functional acceptance on 2026-11-07
 

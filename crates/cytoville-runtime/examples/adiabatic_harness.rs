@@ -11,10 +11,14 @@ fn main() -> Result<(), String> {
         7,
         false,
     )?;
-    let costs = ["university", "solar", "detritus", "diner"].map(|district| {
-        rules::travel_cost(&runtime.content, &runtime.game.actors[0], district)
-            .expect("built-in district")
-    });
+    let mut costs = [0; 4];
+    for (index, district) in ["university", "solar", "detritus", "diner"]
+        .iter()
+        .enumerate()
+    {
+        costs[index] = rules::travel_cost(&runtime.content, &runtime.game.actors[0], district)
+            .ok_or_else(|| format!("Missing harness district: {district}"))?;
+    }
     let receipt = run_local_harness(costs)?;
     println!(
         "{}",
