@@ -17,8 +17,8 @@
 (repo-deed
   :schema-version "1.0.0"
   :canonical-name "cytoville"
-  :beholding-chora #u5"estate/chora"
-  :repo-uuid #u5"github.com/catachresis-colloquium/cytoville"
+  :beholding-chora #u8"chora:estate/github.com/catachresis-colloquium"
+  :repo-uuid #u8"gv-clade-index:github.com/catachresis-colloquium/cytoville"
   ; The canon pin: which release of hyperpolymath/standards canon.lock this
   ; repo implements. It is the ONLY canon pin in this deed (deed_canon
   ; refuses zero or two); the (rsr-profile) clause below declares
