@@ -6,7 +6,7 @@
 |Scope |State |Evidence and boundary
 |Idris ABI size arithmetic, seat involution, phase constructors
 |proven
-|`idris2 --build src/interface/abi.ipkg`; total definitions, no postulates or escape hatches. Trust Idris2 and its compiler. This is a contract-level claim.
+|`idris2 --build abi.ipkg`; total definitions, no postulates or escape hatches. Trust Idris2 and its compiler. This is a contract-level claim.
 |Rust/Zig concrete layout agreement and native kernel calls
 |tested-only
 |Compile-time size/offset assertions, Zig boundary tests and a linked C caller; native x86-64 Linux. C ABI compiler/target layout remains trusted.
@@ -29,6 +29,36 @@ The proof policy is `metadatastician/standards/3-practice/PROOF-POLICY.adoc` at
 Contracts on production Rust are the authority; an Idris model is not substituted
 for proving Rust implementation behaviour.
 
+== Rust scope allocation update, 2026-11-16
+
+Policy §1.2, inspected at standards revision
+`615aeb9367985e583f61aa57fa8d0b4fb658257b`, supersedes the older mapping's
+Verus omission. Creusot, Pearlite and Verus are the default toolset. Existing
+receipts above retain their original source revisions and scope; this entry
+does not migrate the reusable workflow or claim a new proof execution.
+
+[cols="2,1,1,4",options="header"]
+|===
+|Implementation / obligation |Tool / specification |State |Boundary and next action
+|`cytoville-budget::{spend,take_up_to,other_seat}`
+|Creusot / Pearlite
+|proven
+|Historical receipts above. Preserve and rerun the existing production gate for new revisions.
+|The same shipped resource functions: complementary contract correspondence
+|Verus / Verus specifications
+|open
+|No Verus target or receipt in this repository. Add an implementation-linked verification target and reconcile statements with the existing Pearlite contracts; a rewritten model alone is insufficient.
+|`local::Queue::{submit,poll,finish}` and `local::Job::start`: one in-flight transaction, saved-before-published state, shutdown draining
+|Creusot / Pearlite; Verus / ownership and transition specifications
+|open
+|New thread/file boundary has regression tests, not proofs. Specify the actual queue transitions for both verifier scopes; Rust thread/mutex semantics, serde, tempfile 3.27.0 and OS file replacement remain external assumptions. Neither verifier has checked this boundary.
+|===
+
+Normal process exit drains the pending worker. File write/rename is not fsync
+or a guarantee against power loss; process termination and concurrent processes
+writing the same save path are outside this change's contract. Do not promote
+the worker tests or profiling samples to a proof grade.
+
 Toolchain provisioning deviation (open): this initial Windows/WSL validation
 builds Creusot 0.13.0 from upstream commit
 `318615be3b8bbc60d1f6d52469ba5c0bdebed4f1`, using its pinned
@@ -38,10 +68,29 @@ The game-specific reproducible proof container remains to be completed.
 The proposed correction is backported as signed commit
 `1084f47cc64090a7acc5f719a65fec48c1705e06` in cicd-suite. Compared with the
 previous Cytoville pin, only the parser and its regression tests change; the
-workflow and toolchain action pins are identical. The caller and lockfile now
-select that backport. The owner admitted the exact reusable-workflow reference
+workflow and toolchain action pins are identical. The caller and lockfile then
+selected that backport. The owner admitted the exact reusable-workflow reference
 on 2026-11-07. Hosted run 42365155854 validated the corrected singleton parser
 with a real successful control, rejected the deliberately false control, and
 completed the caller proof. The canonical upstream proposal remains
 `hyperpolymath/cicd-suite#92`; this receipt does not claim upstream merge or
 validation against a second repository.
+
+== Repository rename compatibility, 2026-11-16
+
+PR #17's initial proof run 43831042849 could not resolve the old reusable
+workflow address after `cicd-suite` became `proven-cicd-and-workflows`. The
+caller and lockfile now pin the minimal compatibility backport
+`d415d8b92d7a2edeab64f0d816ff9ad12cad4392` in the canonical repository (PR #137,
+targeting the existing compatibility branch). Only repository names in three
+resolvers and four checkout steps change from the previously successful pin;
+the proof scripts and toolchain pins are unchanged. Each actual resolver
+accepted a full-SHA canonical caller and refused floating and ambiguous pins.
+
+The exact new workflow address is now visible in the organisation allowlist.
+Hosted run 43837369943 at Cytoville commit
+`598a981af075e4b4c78a39cc709c9aea7f2d34bb` passed on 2026-11-16: Creusot 0.14.0
+proved three production verification files, rejected the deliberately false
+postcondition and proved the true control. The shared verdict and caller
+acceptance both passed. This receipt covers the recorded resource implementation,
+not the offline worker or all Rust code; subsequent commits require their own CI.

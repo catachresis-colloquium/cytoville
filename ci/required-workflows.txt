@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: MPL-2.0
+# CI/gate requires successful runs at the exact SHA/event.
+# Optional |job name selects a conformance lane, preserving advisory reports.
+.github/workflows/codeql.yml
+.github/workflows/creusot-budget.yml
+.github/workflows/dogfood-gate.yml|Canon lockstep
+.github/workflows/dogfood-gate.yml|RSR oracle — dogfood this repo
+.github/workflows/eclexiaiser-validate.yml
+.github/workflows/empty-linter.yml
+.github/workflows/estate-rules.yml
+.github/workflows/fork-governance.yml|DEED syntax
+.github/workflows/fork-governance.yml|K9-DEED conformance
+.github/workflows/governance.yml
+.github/workflows/groove-check.yml
+.github/workflows/guix-policy.yml
+.github/workflows/hypatia-scan.yml
+.github/workflows/lock-sync-gate.yml
+.github/workflows/main-estate-audit.yml
+.github/workflows/ossf-best-practices.yml
+.github/workflows/proven-tests.yml
+.github/workflows/quality.yml
+.github/workflows/rust-ci.yml
+.github/workflows/secret-scanner.yml
+.github/workflows/security-policy.yml
+.github/workflows/squabble.yml
+.github/workflows/static-analysis-gate.yml
+.github/workflows/workflow-linter.yml

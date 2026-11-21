@@ -79,3 +79,51 @@ locally after the owner authorised a Debian restart. The executable acceptance
 script is wired into Rust CI with screenshot retention. Its CI run must pass
 independently; local success is not a substitute. See GRAPHICAL-ACCEPTANCE.adoc
 under docs/verification for scope and remaining coverage.
+
+== Responsiveness continuation, 2026-11-16
+
+PR #14 merged with the production proof and required Rust checks passing.
+A native release command/save profile reproduced delays up to 61.895 ms and
+identified substantial write/rename time. The next change isolates offline
+dispatch and saving from the UI thread, limits work to one pending transaction,
+publishes state only after a successful checkpoint and drains on normal exit.
+The regression suite covers a stalled worker, continued animation, refusal of
+overlapping mutations, save failure and equivalence with synchronous dispatch.
+This is a targeted responsiveness change, not completion of the district,
+combat, coprocessor, GSA or whole-game latency programme. Hosting remains local.
+
+The proof ledger now explicitly allocates Creusot/Pearlite and Verus scopes
+under policy §1.2. Worker-boundary proofs and the new Verus targets remain OPEN;
+bounded tests are not promoted to proof receipts. The final Linux regression
+suite and Clippy pass. The complete isolated X11 graphical/local-TLS journey
+also passes, including offline save/reload, settings and native rival resume.
+This is functional acceptance, not target-desktop latency certification.
+
+PR #17 carries this change. CI follow-up corrects the current draft
+canon 2.1.5 declaration, native DEED syntax and capability inventory. The
+Idris2 package now builds from root `abi.ipkg`; generated ABI bytes remain
+unchanged. The existing Linux workload is factored into reusable `e2e.yml`;
+the established Rust check still requires both Windows and Linux acceptance.
+The current standards profile checker passes against standards commit
+`305743d271bac04cf271a792b703a6379e29588b`. This is profile conformance, not a
+claim that every normative criterion or formal obligation is complete.
+
+The shared proof repository rename is unblocked: the exact new organisation
+allowlist entry is visible and the minimal compatibility backport is
+`hyperpolymath/proven-cicd-and-workflows#137`. All checks, including production
+proofs and hosted graphical/TLS acceptance, passed at `598a981`. Review then
+identified a same-stem settings/checkpoint staging collision and Windows suffix
+aliases. Unique checkpoint stages and case-insensitive suffix refusal now pass
+16 native Windows tests. The owner approved the exact DEP5 filename correction
+preserving the moved ABI package's existing licence. All functional CI passed
+at `0a3bee7`, including the true/false proof controls and three production
+resource proof files, Windows tests and the Linux graphical/local-TLS journey.
+The final CodeRabbit review was rate-limited; that is not a completed review.
+
+The repository's Branch-Floor rule also requires `CI/gate`, which had no
+producer. The new aggregate collects current-commit/current-event successes
+and preserves advisory reporting boundaries. Its producers now accept
+merge-queue events. No organisation policy or branch protection is weakened.
+This follow-up still requires its own hosted run and merge-queue acceptance.
+Next: the district/encounter milestone, then measured accelerator consumers
+and studio-service integration. Native desktop latency acceptance remains open.

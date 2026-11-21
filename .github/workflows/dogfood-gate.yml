@@ -9,6 +9,8 @@
 name: Dogfood Gate
 
 on:
+  merge_group:
+    types: [checks_requested]
   pull_request:
     branches: ['**']
   push:
@@ -27,7 +29,7 @@ jobs:
   # ---------------------------------------------------------------------------
   deed-validate:
     name: Validate DEED manifests
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.event_name != 'merge_group'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -68,7 +70,7 @@ jobs:
   # ---------------------------------------------------------------------------
   k9-validate:
     name: Validate K9 contracts
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.event_name != 'merge_group'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -460,7 +462,24 @@ jobs:
           TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          DEED_NAME="${REPO#*/}_chora.deed"
+          # Find the deed the way the rest of the estate does: exactly one
+          # *_chora.deed at the root. Building the name from the repo name
+          # fails when the forge name's case differs from the deed's.
+          if ! roots="$(curl -fsSL --retry 3 --max-time 30 \
+              -H "Authorization: Bearer ${TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${REPO}/contents?ref=${HEAD_SHA}" \
+              | jq -r '.[] | select(.type == "file") | .name | select(endswith("_chora.deed"))')"; then
+            echo "::error::could not list the root of ${REPO} at ${HEAD_SHA:0:7}"
+            exit 1
+          fi
+          n="$(printf '%s\n' "$roots" | grep -c . || true)"
+          if [ "$n" != "1" ]; then
+            echo "::error::need exactly one *_chora.deed at the root at ${HEAD_SHA:0:7}, found ${n} — this repo cannot declare a canon pin"
+            exit 1
+          fi
+          DEED_NAME="$roots"
           DEED="$RUNNER_TEMP/repo.deed"
           API="https://api.github.com/repos/${REPO}/contents/${DEED_NAME}?ref=${HEAD_SHA}"
           if ! curl -fsSL --retry 3 --max-time 30 \

@@ -3,6 +3,8 @@
 name: "🔴 GATE: Invisible Character Detection"
 
 on:
+  merge_group:
+    types: [checks_requested]
   pull_request:
     branches: ['**']
   push:

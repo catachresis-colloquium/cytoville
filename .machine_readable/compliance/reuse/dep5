@@ -57,7 +57,7 @@ License: MPL-2.0
 # Inherited template tooling retains its original SPDX declaration.
 Files: Cargo.toml crates/* server/* assets/content/* contracts/* profiles/*
  verification/fixtures/* why3find.json src/interface/Abi/Types.idr
- src/interface/Abi/Generate.idr src/interface/abi.ipkg src/interface/ffi/*
+ src/interface/Abi/Generate.idr abi.ipkg src/interface/ffi/*
  src/interface/generated/* scripts/cytoville-check.sh scripts/install-ci-native.sh
  tests/ffi_strings_test.sh .github/workflows/creusot-budget.yml
 Copyright: 2026 Jonathan D.A. Jewell <j.d.a.jewell@open.ac.uk>

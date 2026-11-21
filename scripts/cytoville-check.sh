@@ -3,8 +3,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 git submodule update --init --recursive
-idris2 --build src/interface/abi.ipkg
-src/interface/build/exec/cytoville-abi-gen
+idris2 --build abi.ipkg
+build/exec/cytoville-abi-gen
 git diff --exit-code -- src/interface/generated
 native_dir="${CARGO_TARGET_DIR:-$PWD/target}/native-check"
 zig build --build-file src/interface/ffi/build.zig test install --cache-dir "$native_dir/cache" --prefix "$native_dir"

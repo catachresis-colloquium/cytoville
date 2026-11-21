@@ -15,3 +15,10 @@ termination, FFI memory safety, and multiplayer authorization/concurrency
 correctness. These remain open even where bounded tests pass.
 
 See link:../verification/PROOF-STATUS.adoc[the ledger] for completed scopes.
+
+The 2026-11-07 policy §1.2 ruling additionally requires Creusot, Pearlite and
+Verus in Rust plans. The existing Creusot/Pearlite resource proofs stay active.
+Verus resource-contract correspondence and offline-worker ownership/acknowledgement
+scopes are OPEN; the ledger records their implementation entrypoints, assumptions
+and next work. The new command-profile example is executable measurement, not
+proof evidence or an independent verifier result.

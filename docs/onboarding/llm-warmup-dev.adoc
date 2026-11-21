@@ -10,7 +10,7 @@ cytoville (https://github.com/catachresis-colloquium/cytoville): a library in id
 
 The template's own code is the ABI/FFI seam that every minted repo inherits:
 
-* `src/interface/Abi/` + `src/interface/abi.ipkg`: Idris2 types and layout proofs
+* `src/interface/Abi/` + `abi.ipkg`: Idris2 types and layout proofs
   (the ABI owns the contract).
 * `src/interface/ffi/`: the Zig implementation (`build.zig`, `src/main.zig`,
   `test/integration_test.zig`), exporting C symbols named `<project>_*`.

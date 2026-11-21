@@ -10,6 +10,7 @@ use cytoville_runtime::Runtime;
 use enaction_time::FixedStep;
 use std::{path::PathBuf, time::Instant};
 mod city;
+mod local;
 mod performance;
 mod portrait;
 mod settings;
@@ -24,6 +25,7 @@ static FONT: std::sync::OnceLock<Handle<Font>> = std::sync::OnceLock::new();
 struct Session {
     runtime: Runtime,
     network: Option<network::Network>,
+    local: local::Queue,
     menu: bool,
     dirty: bool,
     specimen: usize,
@@ -204,6 +206,7 @@ fn main() {
             .configure_rival(user_settings.preferences.rival.clone())
             .expect("valid saved AI configuration");
     }
+    let local_work = local::Queue::default();
     let mut app = App::new();
     let plugins = DefaultPlugins.set(WindowPlugin {
         primary_window: Some(Window {
@@ -232,6 +235,7 @@ fn main() {
         .insert_resource(Session {
             runtime,
             network,
+            local: local_work.clone(),
             menu,
             dirty: true,
             specimen: 0,
@@ -268,6 +272,7 @@ fn main() {
         .add_systems(
             Update,
             (
+                local_updates,
                 keyboard,
                 network_updates,
                 settings::apply,
@@ -296,11 +301,18 @@ fn main() {
     app.add_systems(First, performance::frame);
     app.add_systems(Last, performance::exit_requested);
     app.run();
+    // The window may close while a save is pending; finish that one request
+    // before allowing a normal process exit. No detached checkpoint writers.
+    let shutdown = local_work.finish();
     performance::finished();
     if let Some(path) = profile
         && let Err(error) = performance::write(&path)
     {
         eprintln!("Cannot write performance receipt: {error}");
+        std::process::exit(1);
+    }
+    if let Err(error) = shutdown {
+        eprintln!("Pending local operation failed during shutdown: {error}");
         std::process::exit(1);
     }
 }
@@ -317,23 +329,53 @@ fn save_ticket(path: &str, ticket: &serde_json::Value) -> std::io::Result<()> {
     file.write_all(&serde_json::to_vec(ticket)?)?;
     Ok(())
 }
-fn save(s: &Session) -> Result<(), String> {
+fn start_local(s: &mut Session, command: Option<GameCommand>) -> Result<(), String> {
     if s.network.is_some() {
         return Err("The multiplayer server owns this session".into());
     }
-    let bytes = {
-        let _timing = performance::Span::new("save_serialize_ms");
-        serde_json::to_vec(&s.runtime).map_err(|e| e.to_string())?
-    };
-    let temp = s.save.with_extension("tmp");
-    {
-        let _timing = performance::Span::new("save_write_ms");
-        std::fs::write(&temp, bytes).map_err(|e| e.to_string())?;
+    if s.local.is_some() {
+        return Err("Finishing the previous action and saving your progress…".into());
     }
-    let _timing = performance::Span::new("save_replace_ms");
-    std::fs::rename(&temp, &s.save).map_err(|e| e.to_string())
+    let _timing = performance::Span::new("local_submit_ms");
+    s.local.start(s.runtime.clone(), s.save.clone(), command)?;
+    Ok(())
+}
+fn local_updates(mut s: ResMut<Session>) {
+    match s.local.poll() {
+        Ok(Some(done)) => {
+            s.dirty = true;
+            s.runtime = done.runtime;
+            s.message = if done.manual_save {
+                "Saved".into()
+            } else {
+                String::new()
+            };
+            if done.travelled {
+                let id = &s.runtime.game.actors[0].location;
+                s.map_message = format!(
+                    "Now at {}. Choose an action on the right →",
+                    s.runtime.content.locations[id].name
+                );
+            }
+        }
+        Err(error) => {
+            s.dirty = true;
+            s.map_message.clear();
+            s.message = error;
+        }
+        Ok(None) => {}
+    }
+}
+fn save(s: &mut Session) {
+    s.message = start_local(s, None)
+        .map(|_| "Saving your progress…".into())
+        .unwrap_or_else(|e| e);
+    s.dirty = true;
 }
 fn load(s: &mut Session) -> Result<(), String> {
+    if s.local.is_some() {
+        return Err("Finish saving before loading another game.".into());
+    }
     let bytes = std::fs::read(&s.save).map_err(|e| e.to_string())?;
     if bytes.len() > 8 * 1024 * 1024 {
         return Err("Save too large".into());
@@ -346,17 +388,16 @@ fn load(s: &mut Session) -> Result<(), String> {
     Ok(())
 }
 fn command(s: &mut Session, cmd: GameCommand) {
-    let _timing = performance::Span::new("command_and_autosave_ms");
     let result = if let Some(net) = &s.network {
+        let _timing = performance::Span::new("command_and_autosave_ms");
         net.command(s.runtime.game.revision, &cmd)
     } else {
-        let _timing = performance::Span::new("local_dispatch_ms");
-        s.runtime.dispatch(0, &cmd)
+        start_local(s, Some(cmd))
     };
     s.message = match result {
         Ok(()) => {
             if s.network.is_none() {
-                save(s).err().unwrap_or_default()
+                "Updating your cell and saving progress…".into()
             } else {
                 String::new()
             }
@@ -375,6 +416,23 @@ fn interact(
         return;
     };
     if !enabled.0 {
+        return;
+    }
+    if s.local.is_some()
+        && matches!(
+            click,
+            Click::Start
+                | Click::Continue
+                | Click::Menu
+                | Click::Save
+                | Click::Game(_)
+                | Click::Pattern
+                | Click::Pigment
+                | Click::Rename
+        )
+    {
+        s.message = "Finishing the previous action and saving your progress…".into();
+        s.dirty = true;
         return;
     }
     match click.clone() {
@@ -442,7 +500,7 @@ fn interact(
                 s.message = e;
             }
         }
-        Click::Save => s.message = save(&s).map(|_| "Saved".into()).unwrap_or_else(|e| e),
+        Click::Save => save(&mut s),
         Click::Menu => {
             if s.network.is_none() {
                 s.menu = true;
@@ -504,7 +562,9 @@ fn interact(
                     return;
                 }
                 command(&mut s, cmd);
-                s.map_message = if !s.message.is_empty() {
+                s.map_message = if s.local.is_some() {
+                    format!("Travelling to {district}…")
+                } else if !s.message.is_empty() {
                     std::mem::take(&mut s.message)
                 } else if s.network.is_some() {
                     format!("Travel to {district} requested; waiting for the host.")
@@ -647,8 +707,7 @@ fn keyboard(
     }
     typed.clear();
     if keys.just_pressed(KeyCode::F5) {
-        s.message = save(&s).map(|_| "Saved".into()).unwrap_or_else(|e| e);
-        s.dirty = true;
+        save(&mut s);
     }
     if keys.just_pressed(KeyCode::F9) && s.network.is_none() {
         if let Err(e) = load(&mut s) {
@@ -659,7 +718,7 @@ fn keyboard(
     if keys.just_pressed(KeyCode::Space) && !s.menu {
         command(&mut s, GameCommand::EndTurn);
     }
-    if keys.just_pressed(KeyCode::Escape) && s.network.is_none() {
+    if keys.just_pressed(KeyCode::Escape) && s.network.is_none() && !s.local.is_some() {
         s.menu = !s.menu;
         s.dirty = true;
     }
@@ -902,6 +961,98 @@ mod tests {
     use std::sync::{Mutex, mpsc};
 
     #[test]
+    fn stalled_local_work_keeps_animation_running_and_blocks_state_replacement() {
+        let runtime = Runtime::new(
+            Content::builtin(),
+            "euglena",
+            "full-cycle",
+            "standard",
+            7,
+            false,
+        )
+        .unwrap();
+        let before = serde_json::to_value(&runtime).unwrap();
+        let queue = local::Queue::default();
+        let (release, wait) = mpsc::channel();
+        queue
+            .submit(|| {
+                local::Job::spawn(move || {
+                    wait.recv().map_err(|e| e.to_string())?;
+                    Err("fixture write failure".into())
+                })
+            })
+            .unwrap();
+        // A second request must be rejected before its work starts.
+        assert!(
+            queue
+                .submit(|| panic!("second job must not start"))
+                .is_err()
+        );
+        let mut app = App::new();
+        app.insert_resource(Session {
+            runtime,
+            network: None,
+            local: queue.clone(),
+            menu: false,
+            dirty: false,
+            specimen: 0,
+            scenario: 0,
+            difficulty: 1,
+            seed: 7,
+            page: 0,
+            message: String::new(),
+            map_message: String::new(),
+            save: PathBuf::new(),
+            clock: FixedStep::from_hz(30.),
+            visual_phase: 0.,
+            smoke_until: None,
+            name_edit: None,
+            inspect: false,
+        })
+        .init_resource::<Time>()
+        .init_resource::<settings::Settings>()
+        .init_resource::<ButtonInput<KeyCode>>()
+        .add_message::<bevy::input::keyboard::KeyboardInput>()
+        .add_message::<AppExit>()
+        .add_systems(Update, (local_updates, keyboard, animate).chain())
+        .add_observer(interact);
+        let start = app.world_mut().spawn((Click::Start, Enabled(true))).id();
+        app.world_mut().trigger(Activate { entity: start });
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::Space);
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .press(KeyCode::F9);
+        for _ in 0..30 {
+            app.world_mut()
+                .resource_mut::<Time>()
+                .advance_by(std::time::Duration::from_millis(34));
+            app.update();
+        }
+        let session = app.world().resource::<Session>();
+        assert!(
+            session.visual_phase > 0.5,
+            "pending I/O stopped animation updates"
+        );
+        assert_eq!(serde_json::to_value(&session.runtime).unwrap(), before);
+        assert!(!session.menu);
+        app.world_mut()
+            .resource_mut::<ButtonInput<KeyCode>>()
+            .reset_all();
+        release.send(()).unwrap();
+        let deadline = Instant::now() + std::time::Duration::from_secs(10);
+        while queue.is_some() && Instant::now() < deadline {
+            app.update();
+            std::thread::yield_now();
+        }
+        assert!(!queue.is_some());
+        let session = app.world().resource::<Session>();
+        assert_eq!(session.message, "fixture write failure");
+        assert_eq!(serde_json::to_value(&session.runtime).unwrap(), before);
+    }
+
+    #[test]
     fn research_settings_do_not_issue_game_commands_or_enable_backends() {
         let mut app = App::new();
         let runtime = Runtime::new(
@@ -917,6 +1068,7 @@ mod tests {
         app.insert_resource(Session {
             runtime,
             network: None,
+            local: local::Queue::default(),
             menu: false,
             dirty: false,
             specimen: 0,
@@ -994,6 +1146,7 @@ mod tests {
             )
             .unwrap(),
             network: None,
+            local: local::Queue::default(),
             menu: false,
             dirty: false,
             specimen: 0,
@@ -1059,6 +1212,7 @@ mod tests {
                 invitation: String::new(),
                 resume: serde_json::Value::Null,
             }),
+            local: local::Queue::default(),
             menu: false,
             dirty: false,
             specimen: 0,

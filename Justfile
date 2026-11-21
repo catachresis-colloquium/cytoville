@@ -290,8 +290,8 @@ run *args:
 
 # Regenerate the ABI from the total Idris2 source.
 abi-generate:
-    idris2 --build src/interface/abi.ipkg
-    src/interface/build/exec/cytoville-abi-gen
+    idris2 --build abi.ipkg
+    build/exec/cytoville-abi-gen
 
 # Prove the production resource module through Creusot/Pearlite and Why3.
 verify-budget:

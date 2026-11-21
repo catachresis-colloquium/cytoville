@@ -115,6 +115,7 @@ dist/
 # ...but never track Idris2 typecheck output. `idris2 --typecheck src/interface/abi.ipkg`
 # writes compiled .ttc/.ttm under build/ttc/; these are generated artifacts.
 /build/ttc/
+/build/exec/
 
 # Arrival-pack build artifact (regenerated from deed)
 .machine_readable/arrival-pack/claude-md-data.json

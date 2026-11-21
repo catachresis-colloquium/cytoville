@@ -160,10 +160,16 @@ Read it there; `verification/proofs/README.adoc` maps it onto this repo.
 
 | Code or obligation | Verifier |
 |---|---|
-| Rust code | **Creusot**, on the code (Kani for `unsafe`/FFI seams and Aeneas for Rust that implements an Agda theorem run alongside, never instead) |
+| Rust code | **Creusot** with **Pearlite** contracts, and **Verus**, with distinct implementation-linked scopes; record pending or unsupported scopes explicitly. Kani for `unsafe`/FFI seams and Aeneas for Rust that implements an Agda theorem run alongside, never instead. |
 | Ada code | **SPARK** |
 | APIs, ABIs, engineering properties | **Idris2** |
 | Theory | **Agda**, rechecked in **Rocq** and **Lean** (no Mathlib) |
+
+The Rust mapping follows policy §1.2 (owner ruling 2026-11-07), inspected at
+standards revision `615aeb9367985e583f61aa57fa8d0b4fb658257b`. Pearlite is
+Creusot's specification language; Verus uses its own specifications. Preserve
+the existing Creusot gate. Adoption does not imply Verus already runs here;
+`docs/verification/PROOF-STATUS.adoc` records its OPEN scopes and next actions.
 
 Third-party code (crates such as Bevy, libraries, forks) is **not** converted
 or re-proved. State what a proof relies on as an `ASSUMED` boundary

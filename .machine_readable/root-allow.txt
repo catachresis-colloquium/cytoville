@@ -96,6 +96,7 @@ tests/
 # Cytoville native game workspace and versioned interoperability contracts
 Cargo.toml                # Rust workspace entry point
 Cargo.lock                # Exact Rust dependency graph
+abi.ipkg                  # Idris2 ABI build entry point required by canon 2.1.5; sources remain in src/interface/Abi/
 crates/                   # Rust core, client, native boundary and UMS adapter
 assets/                   # Authoritative game content
 contracts/                # Game-owned UMS package contracts

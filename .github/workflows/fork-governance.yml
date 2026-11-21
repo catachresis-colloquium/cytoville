@@ -53,6 +53,8 @@
 name: Fork governance
 
 on:
+  merge_group:
+    types: [checks_requested]
   pull_request:
   workflow_dispatch:
 
@@ -105,7 +107,7 @@ jobs:
 
       - name: Validate DEED manifests and block retired .a2ml files
         env:
-          BASE_REF: ${{ github.base_ref }}
+          BASE_REF: ${{ github.event.merge_group.base_sha || github.event.pull_request.base.sha || github.base_ref }}
         run: |
           set -euo pipefail
           STANDARDS_ABS="$PWD/.standards-deed"

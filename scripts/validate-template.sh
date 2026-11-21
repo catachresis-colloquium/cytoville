@@ -395,8 +395,14 @@ fi
 # path / import breakage that a bare per-file `idris2 --check` masks as a
 # tolerated "module name does not match file name" warning.
 if command -v idris2 &> /dev/null; then
-    if [ -f "$REPO_ROOT/src/interface/abi.ipkg" ]; then
-        if (cd "$REPO_ROOT" && idris2 --typecheck src/interface/abi.ipkg) > /dev/null 2>&1; then
+    ABI_PACKAGE=""
+    if [ -f "$REPO_ROOT/abi.ipkg" ]; then
+        ABI_PACKAGE="abi.ipkg"
+    elif [ -f "$REPO_ROOT/src/interface/abi.ipkg" ]; then
+        ABI_PACKAGE="src/interface/abi.ipkg"
+    fi
+    if [ -n "$ABI_PACKAGE" ]; then
+        if (cd "$REPO_ROOT" && idris2 --typecheck "$ABI_PACKAGE") > /dev/null 2>&1; then
             log_pass "Idris2 ABI typechecks (abi.ipkg)"
         else
             log_error "Idris2 ABI does NOT typecheck (abi.ipkg)"

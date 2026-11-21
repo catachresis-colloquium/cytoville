@@ -56,3 +56,23 @@ excluded from picking so they do not intercept gameplay buttons.
 The earlier X11 runtime dependency correction passed hosted Rust CI in run
 42363302072, including its graphical/TLS step. That historical hosted result
 does not certify subsequent presentation changes; those require their own CI.
+
+== Offline worker continuation, 2026-11-16
+
+The final worker build passed the full 1440x960 X11 input journey: offline
+save/reload, native rival, loopback TLS command/resume, all six settings tabs,
+presentation persistence and configured baseline rival. An earlier attempt
+timed out at TLS handshake after passing the offline steps. The successful
+rerun bounded the test BEAM runtime to two schedulers with `ERL_FLAGS=+S 2:2`;
+this does not establish the timeout's cause or change production TLS policy.
+
+Linux validation passed 15 Bevy binary tests, one library test and Clippy for
+the Bevy/runtime targets. The worker's stalled-job regression checks continued
+animation and refusal of overlapping state changes. This is not a new native
+Windows live-window or input-to-display performance receipt.
+
+The review follow-up passed all 16 native Windows release binary tests,
+including `.tmp`/`.TMP`/`.TmP` refusal and an actual settings write interleaved
+between checkpoint staging and replacement. Checkpoint stages now use uniquely
+created same-directory files; failed replacement cleans up the private stage.
+Hosted graphical acceptance must run again on this follow-up commit.

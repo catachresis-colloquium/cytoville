@@ -5,6 +5,8 @@
 name: Rust CI
 
 on:
+  merge_group:
+    types: [checks_requested]
   push:
     branches: [main, master]
   pull_request:
@@ -39,66 +41,19 @@ jobs:
         shell: pwsh
         run: cargo test -p cytoville-runtime --release --test runtime --locked
 
+  acceptance:
+    needs: windows-native
+    uses: ./.github/workflows/e2e.yml
+
   rust-ci:
     name: Rust standalone tools and workspace gate
-    needs: windows-native
+    needs: [windows-native, acceptance]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    permissions:
-      contents: read
+    timeout-minutes: 1
     steps:
-      - name: Require Windows native boundary acceptance
+      - name: Require both native platforms and complete acceptance
         env:
           WINDOWS_RESULT: ${{ needs.windows-native.result }}
-        run: test "$WINDOWS_RESULT" = success
-
-      - name: Checkout repository
-        uses: actions/checkout@v7.0.1
-        with:
-          persist-credentials: false
-          submodules: recursive
-
-      - name: Install pinned game native tools
-        run: bash scripts/install-ci-native.sh
-
-      - name: Install BEAM for authoritative multiplayer tests
-        uses: erlef/setup-beam@v1.24.1
-        with:
-          otp-version: "28.3.1"
-          elixir-version: "1.19.4"
-
-      - name: Install Rust
-        run: rustup toolchain install 1.99.1 --profile minimal --component rustfmt,clippy && rustup default 1.99.1
-
-      - name: Compile standalone Rust helpers and run tests
-        run: |
-          set -euo pipefail
-          rustc --version
-          mkdir -p "$RUNNER_TEMP/rust-bins"
-          for src in scripts/*.rs; do
-            [ -f "$src" ] || continue
-            bin_name="$(basename "$src" .rs)"
-            echo "Compiling $src (-D warnings)..."
-            rustc --edition 2021 -D warnings "$src" -o "$RUNNER_TEMP/rust-bins/$bin_name"
-          done
-          if [ -f tests/workflows/archetype_lock_merge_test.sh ]; then
-            bash tests/workflows/archetype_lock_merge_test.sh
-          fi
-          if [ -f Cargo.toml ]; then
-            bash scripts/cytoville-check.sh
-          fi
-
-      - name: Graphical acceptance with local encrypted multiplayer
-        env:
-          CYTOVILLE_ACCEPTANCE_OUTPUT: ${{ runner.temp }}/cytoville-graphical-acceptance
-        run: xvfb-run -a -s "-screen 0 1440x960x24 -nolisten tcp" bash scripts/cytoville-graphical-acceptance.sh
-
-      - name: Retain graphical acceptance screenshots and receipt
-        if: always()
-        uses: actions/upload-artifact@v7.0.2
-        with:
-          name: cytoville-graphical-acceptance
-          path: ${{ runner.temp }}/cytoville-graphical-acceptance
-          retention-days: 7
-          if-no-files-found: warn
+          ACCEPTANCE_RESULT: ${{ needs.acceptance.result }}
+        run: test "$WINDOWS_RESULT" = success && test "$ACCEPTANCE_RESULT" = success

@@ -133,6 +133,10 @@ predecessors did.
 | optional
 | community health file; GitHub accepts it at root, docs/ or .github/
 
+| `abi.ipkg`
+| yes
+| Idris2 ABI build entry point required by canon 2.1.5; sources remain in src/interface/Abi/
+
 | `assets/`
 | yes
 | Authoritative game content

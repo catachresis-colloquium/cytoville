@@ -5,12 +5,12 @@
 name: Workflow Security Linter
 
 on:
+  merge_group:
+    types: [checks_requested]
   push:
     paths:
       - '.github/workflows/**'
   pull_request:
-    paths:
-      - '.github/workflows/**'
   workflow_dispatch:
 
 concurrency:

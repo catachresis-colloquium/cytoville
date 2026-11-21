@@ -19,6 +19,8 @@
 name: CICD Squabbler
 
 on:
+  merge_group:
+    types: [checks_requested]
   pull_request:
   push:
     branches: [main, master]

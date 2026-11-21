@@ -3,6 +3,8 @@
 name: Governance
 
 on:
+  merge_group:
+    types: [checks_requested]
   push:
     branches: [main, master]
   pull_request:

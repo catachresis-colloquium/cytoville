@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 name: Production resource proofs
 on:
+  merge_group:
+    types: [checks_requested]
   push:
     branches: [main]
   pull_request:
@@ -12,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   budget:
-    uses: hyperpolymath/cicd-suite/.github/workflows/creusot-gate.yml@1084f47cc64090a7acc5f719a65fec48c1705e06
+    uses: hyperpolymath/proven-cicd-and-workflows/.github/workflows/creusot-gate.yml@d415d8b92d7a2edeab64f0d816ff9ad12cad4392
     with:
       working_directory: crates/cytoville-budget
       creusot_version: "0.14.0"

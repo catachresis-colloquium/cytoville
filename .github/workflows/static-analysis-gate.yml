@@ -30,6 +30,8 @@
 # pons and patch-bridge are advisory. The verdict grid never gates.
 name: Static Analysis Gate
 on:
+  merge_group:
+    types: [checks_requested]
   pull_request:
     branches: ['**']
   push:

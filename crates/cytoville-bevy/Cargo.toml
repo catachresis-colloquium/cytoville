@@ -12,3 +12,4 @@ enaction-time.workspace = true
 serde_json.workspace = true
 serde.workspace = true
 native-tls = "0.2"
+tempfile = "=3.27.0"

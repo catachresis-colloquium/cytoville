@@ -13,8 +13,8 @@ this page only maps it onto this directory.
 |Code or obligation |Verifier |Where it lives
 
 |Rust code
-|*Creusot*
-|On the Rust code itself (contracts in the crate), not in this directory.
+|*Creusot* with *Pearlite* contracts, and *Verus*
+|On the Rust code itself, with implementation-linked scopes under policy §1.2. Pearlite specifies Creusot contracts; Verus has its own specification/proof language. Record pending scopes in the proof ledger.
 
 |Ada code
 |*SPARK*
@@ -34,7 +34,7 @@ Statements about one repository's types, functions or wire formats are
 engineering (Idris2). Statements that would hold for any implementation are
 theory (Agda). Behaviour of first-party Rust or Ada code (pre- and
 postconditions, loop invariants, absence of run-time errors) is proved with
-Creusot or SPARK on that code, not restated in Idris2.
+Creusot/Pearlite and Verus, or SPARK for Ada, on that code, not restated in Idris2.
 
 Another tool only where it is plainly the right one, recorded beside the
 artefact and in `docs/status/PROOF-STATUS.adoc` (policy §4). `tlaplus/` is

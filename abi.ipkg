@@ -1,6 +1,6 @@
 package cytoville-abi
 version = 0.1.0
-sourcedir = "."
+sourcedir = "src/interface"
 modules = Abi.Types, Abi.Generate
 main = Abi.Generate
 executable = cytoville-abi-gen

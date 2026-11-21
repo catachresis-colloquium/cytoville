@@ -26,6 +26,8 @@
 name: Hypatia Security Scan
 
 on:
+  merge_group:
+    types: [checks_requested]
   pull_request:
   push:
     branches: [main, master, develop]

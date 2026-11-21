@@ -3,6 +3,8 @@
 name: "🟡 CHECK: Eclexiaiser Manifest Validation"
 
 on:
+  merge_group:
+    types: [checks_requested]
   pull_request:
     branches: ['**']
   push:

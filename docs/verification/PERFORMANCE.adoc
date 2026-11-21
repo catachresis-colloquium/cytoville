@@ -103,3 +103,60 @@ Measure these on the same repeatable journey before choosing asynchronous
 persistence, clone reduction, a cache or a numeric accelerator. Do not weaken
 save ordering or acknowledge server commands before their durability contract
 is met merely to improve a timing number.
+
+== Offline transaction isolation, 2026-11-16
+
+`cargo run -p cytoville-runtime --example command_profile --release --locked --
+/absolute/new/scratch-directory` repeats three fixed seeds through up to 24
+cycles, resolves the first legal event choice and writes/reads back every
+accepted command. The directory must not exist; the example never opens a
+user save. Stdout contains numerical samples and workload metadata. This is a
+headless workload, not an input-to-display benchmark.
+
+One Windows/MSVC release run against the pre-worker command path recorded:
+
+[cols="2,1,1,1,1",options="header"]
+|===
+|Rival / metric |Samples |Median ms |p95 ms |Maximum ms
+|Baseline command plus save |114 |5.628 |8.191 |47.091
+|Native rival command plus save |111 |12.252 |40.244 |61.895
+|Native rival dispatch |111 |2.092 |11.245 |23.520
+|Native rival serialisation |111 |0.469 |4.105 |10.866
+|Native rival file write |111 |2.453 |12.854 |39.919
+|Native rival file replacement |111 |5.427 |15.671 |31.008
+|===
+
+These are sequential batches under other system load, not a controlled
+comparison of rival algorithms. Free physical RAM was below 1 GiB before the
+sample; no unrelated processes were stopped. Component maxima occur on
+different commands and must not be added. This sample does not reproduce or
+explain every earlier 377 ms stall, but does show file operations occupying
+time that the old client spent on the UI thread.
+
+The offline client now submits one command/save transaction to a worker.
+Only cloning the acknowledged snapshot and starting the worker remain on the
+UI thread (`local_submit_ms`). Dispatch, serialisation, write and replacement
+retain their individual timings on the worker. `local_completion_wait_ms`
+includes worker execution and the delay until completion is consumed; it is
+not UI-thread CPU time or display latency. For offline work,
+`command_and_autosave_ms` now measures worker execution, including manual saves.
+Its meaning on the multiplayer path remains command submission only.
+
+The UI publishes the new runtime after write/rename succeeds. While pending,
+further game mutations, save/load and new-game requests are refused with visible
+feedback; presentation/settings/animation updates continue. Failed writes keep
+the last acknowledged runtime. This deliberately prevents playing forward on
+an unsaved state. Normal shutdown drains the one pending request before exit;
+a shutdown failure is reported on stderr with failure exit status.
+
+The checkpoint format is unchanged. The worker writes a uniquely created,
+private staging file beside the destination, then replaces the checkpoint via
+`tempfile` 3.27.0. Settings and game saves with the same filename stem no longer
+share a staging path; a regression interleaves the real settings writer between
+checkpoint staging and replacement. Failed/abandoned stages are cleaned up.
+There is no fsync/power-loss claim, no guarantee on forced process termination,
+and no cross-process save lock. Reserved `.tmp` save names are refused without
+regard to ASCII case, including Windows aliases. A cold/large snapshot clone,
+UI rebuild, startup and presentation queues remain separate possible stalls.
+The stalled-worker regression exercises continued animation and state isolation;
+it does not establish improved click-to-photon latency on the user's desktop.

@@ -16,6 +16,32 @@ not "tidied away" into a real coverage gap.
 Same tool, two different consumers (security scan vs fleet learning). Removing
 either loses real function — keep both.
 
+== Cytoville merge gate
+
+The repository's Branch-Floor ruleset requires the exact check `CI/gate`.
+`ci.yml` supplies it for pull requests to main and `merge_group`
+checks_requested events. It collects the latest run of each producer listed
+in `ci/required-workflows.txt` for the exact commit SHA and event, with a
+read-only Actions token. Every producer also runs for merge-queue commits.
+The production proof caller stays direct, preserving its pinned-ref resolver.
+
+Missing, unfinished, cancelled, skipped, neutral or failed required evidence
+cannot produce a green aggregate. Collection has a 55-minute deadline and
+refuses API errors. Job-specific entries are bound to the selected run and
+attempt; an old successful attempt cannot hide a failed rerun. Refusal tests
+exercise the actual evaluator, and governance tests check trigger wiring.
+
+Fork governance contributes DEED and K9 conformance; its fleet and verdict
+reports remain advisory. Dogfood contributes canon lockstep and its RSR
+oracle; its duplicated lint lanes are covered by their standalone workflows,
+and its scorecard remains advisory. Optional SonarQube, external bot reviews
+and publishing workflows are not aggregate dependencies. The existing Rust
+gate still requires Windows and full Linux graphical/local-TLS acceptance.
+
+This satisfies an existing required context without bypassing branch rules.
+It does not create coverage measurements, extend the scope of production
+proofs, certify desktop latency, or deploy public hosting.
+
 == Secret scanning is single-sourced *in CI* — and two-tier overall
 
 `secret-scanner.yml` calls the standards reusable (gitleaks + a Rust-secrets
